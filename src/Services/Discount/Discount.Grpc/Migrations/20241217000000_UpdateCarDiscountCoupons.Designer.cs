@@ -51,13 +51,6 @@ namespace Discount.Grpc.Migrations
                         new
                         {
                             Id = 2,
-                            Amount = 100,
-                            Description = "Samsung Discount",
-                            ProductName = "Samsung 10"
-                        },
-                        new
-                        {
-                            Id = 3,
                             Amount = 20,
                             Description = "LEGO Ferrari F1 Araba İndirimi",
                             ProductName = "LEGO Technic Ferrari SF-24 F1 Araba"
