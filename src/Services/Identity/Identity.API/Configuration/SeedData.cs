@@ -37,11 +37,19 @@ public static class SeedData
             if (!await configurationDbContext.IdentityResources.AnyAsync())
             {
                 Log.Information("🔑 Seeding identity resources...");
-                foreach (var resource in Config.IdentityResources)
+                try
                 {
-                    await configurationDbContext.IdentityResources.AddAsync(resource.ToEntity());
+                    foreach (var resource in Config.IdentityResources)
+                    {
+                        await configurationDbContext.IdentityResources.AddAsync(resource.ToEntity());
+                    }
+                    await configurationDbContext.SaveChangesAsync();
                 }
-                await configurationDbContext.SaveChangesAsync();
+                catch (Exception mapperEx)
+                {
+                    Log.Warning("⚠️ AutoMapper issue with IdentityServer4: {Error}. Skipping identity resources seeding.", mapperEx.Message);
+                    Log.Information("ℹ️ Identity resources will be created on first use.");
+                }
             }
         }
         catch (Exception ex)
@@ -50,14 +58,22 @@ public static class SeedData
             await configurationDbContext.Database.MigrateAsync();
 
             // Retry seeding after migration
-            if (!await configurationDbContext.IdentityResources.AnyAsync())
+            try
             {
-                Log.Information("🔑 Seeding identity resources after migration...");
-                foreach (var resource in Config.IdentityResources)
+                if (!await configurationDbContext.IdentityResources.AnyAsync())
                 {
-                    await configurationDbContext.IdentityResources.AddAsync(resource.ToEntity());
+                    Log.Information("🔑 Seeding identity resources after migration...");
+                    foreach (var resource in Config.IdentityResources)
+                    {
+                        await configurationDbContext.IdentityResources.AddAsync(resource.ToEntity());
+                    }
+                    await configurationDbContext.SaveChangesAsync();
                 }
-                await configurationDbContext.SaveChangesAsync();
+            }
+            catch (Exception retryEx)
+            {
+                Log.Warning("⚠️ Still failed after migration: {Error}. Continuing without identity resources.", retryEx.Message);
+                Log.Information("ℹ️ Identity resources will be created automatically on first request.");
             }
         }
 
