@@ -12,20 +12,25 @@ namespace Discount.Grpc.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Delete existing iPhone X coupon and replace with car discounts
+            // Delete existing iPhone X and Samsung coupons
             migrationBuilder.DeleteData(
                 table: "Coupons",
                 keyColumn: "Id",
                 keyValue: 1);
 
-            // Update existing coupons and add new car-specific coupons
+            migrationBuilder.DeleteData(
+                table: "Coupons",
+                keyColumn: "Id",
+                keyValue: 2);
+
+            // Add new car-specific coupons only
             migrationBuilder.InsertData(
                 table: "Coupons",
                 columns: new[] { "Id", "Amount", "Description", "ProductName" },
                 values: new object[,]
                 {
                     { 1, 20, "Lamborghini Model Araba İndirimi", "1:24 Lamborghini Sian FKP 37 Model Araba (Yeşil)" },
-                    { 3, 20, "LEGO Ferrari F1 Araba İndirimi", "LEGO Technic Ferrari SF-24 F1 Araba" }
+                    { 2, 20, "LEGO Ferrari F1 Araba İndirimi", "LEGO Technic Ferrari SF-24 F1 Araba" }
                 });
         }
 
