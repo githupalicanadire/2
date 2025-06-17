@@ -83,11 +83,18 @@ public static class SeedData
             if (!await configurationDbContext.ApiScopes.AnyAsync())
             {
                 Log.Information("🔒 Seeding API scopes...");
-                foreach (var scope in Config.ApiScopes)
+                try
                 {
-                    await configurationDbContext.ApiScopes.AddAsync(scope.ToEntity());
+                    foreach (var scope in Config.ApiScopes)
+                    {
+                        await configurationDbContext.ApiScopes.AddAsync(scope.ToEntity());
+                    }
+                    await configurationDbContext.SaveChangesAsync();
                 }
-                await configurationDbContext.SaveChangesAsync();
+                catch (Exception mapperEx)
+                {
+                    Log.Warning("⚠️ AutoMapper issue with API scopes: {Error}. Skipping.", mapperEx.Message);
+                }
             }
         }
         catch (Exception ex)
@@ -101,11 +108,18 @@ public static class SeedData
             if (!await configurationDbContext.ApiResources.AnyAsync())
             {
                 Log.Information("🌐 Seeding API resources...");
-                foreach (var resource in Config.ApiResources)
+                try
                 {
-                    await configurationDbContext.ApiResources.AddAsync(resource.ToEntity());
+                    foreach (var resource in Config.ApiResources)
+                    {
+                        await configurationDbContext.ApiResources.AddAsync(resource.ToEntity());
+                    }
+                    await configurationDbContext.SaveChangesAsync();
                 }
-                await configurationDbContext.SaveChangesAsync();
+                catch (Exception mapperEx)
+                {
+                    Log.Warning("⚠️ AutoMapper issue with API resources: {Error}. Skipping.", mapperEx.Message);
+                }
             }
         }
         catch (Exception ex)
@@ -119,11 +133,18 @@ public static class SeedData
             if (!await configurationDbContext.Clients.AnyAsync())
             {
                 Log.Information("👥 Seeding clients...");
-                foreach (var client in Config.Clients)
+                try
                 {
-                    await configurationDbContext.Clients.AddAsync(client.ToEntity());
+                    foreach (var client in Config.Clients)
+                    {
+                        await configurationDbContext.Clients.AddAsync(client.ToEntity());
+                    }
+                    await configurationDbContext.SaveChangesAsync();
                 }
-                await configurationDbContext.SaveChangesAsync();
+                catch (Exception mapperEx)
+                {
+                    Log.Warning("⚠️ AutoMapper issue with clients: {Error}. Skipping.", mapperEx.Message);
+                }
             }
         }
         catch (Exception ex)
