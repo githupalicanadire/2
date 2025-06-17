@@ -46,12 +46,16 @@ namespace Discount.Grpc.Migrations
             migrationBuilder.DeleteData(
                 table: "Coupons",
                 keyColumn: "Id",
-                keyValue: 3);
+                keyValue: 2);
 
             migrationBuilder.InsertData(
                 table: "Coupons",
                 columns: new[] { "Id", "Amount", "Description", "ProductName" },
-                values: new object[] { 1, 150, "IPhone Discount", "IPhone X" });
+                values: new object[,]
+                {
+                    { 1, 150, "IPhone Discount", "IPhone X" },
+                    { 2, 100, "Samsung Discount", "Samsung 10" }
+                });
         }
     }
 }
