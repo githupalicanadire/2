@@ -144,11 +144,11 @@ public class AccountController : ControllerBase
         // Add default claims
         await _userManager.AddClaimsAsync(user, new[]
         {
-            new Claim("sub", user.Id),
-            new Claim("name", user.FullName),
-            new Claim("given_name", user.FirstName),
-            new Claim("family_name", user.LastName),
-            new Claim("email", user.Email),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.Name, user.FullName),
+            new Claim(JwtRegisteredClaimNames.GivenName, user.FirstName),
+            new Claim(JwtRegisteredClaimNames.FamilyName, user.LastName),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim("role", "customer")
         });
 
