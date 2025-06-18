@@ -30,54 +30,7 @@ public class AccountController : ControllerBase
         _configuration = configuration;
     }
 
-    private string GenerateJwtToken(ApplicationUser user, IList<Claim> claims)
-    {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-            jwtSettings["SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast256BitsLong!"));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        // Create a clean claims dictionary to avoid duplicates
-        var claimsDict = new Dictionary<string, string>
-        {
-            [JwtRegisteredClaimNames.Jti] = Guid.NewGuid().ToString(),
-            [JwtRegisteredClaimNames.Sub] = user.Id,
-            [JwtRegisteredClaimNames.Email] = user.Email ?? "",
-            [JwtRegisteredClaimNames.GivenName] = user.FirstName,
-            [JwtRegisteredClaimNames.FamilyName] = user.LastName,
-            [JwtRegisteredClaimNames.Name] = user.FullName,
-            ["username"] = user.UserName ?? ""
-        };
-
-        // Add only non-conflicting user claims
-        foreach (var claim in claims)
-        {
-            if (!claimsDict.ContainsKey(claim.Type) &&
-                !string.IsNullOrEmpty(claim.Value))
-            {
-                claimsDict[claim.Type] = claim.Value;
-            }
-        }
-
-        // Convert to Claim objects
-        var tokenClaims = claimsDict.Select(kvp => new Claim(kvp.Key, kvp.Value)).ToList();
-
-        var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"] ?? "http://identity.api:8080",
-            audience: jwtSettings["Audience"] ?? "shopping-spa",
-            claims: tokenClaims,
-            expires: DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["ExpirationMinutes"] ?? "60")),
-            signingCredentials: credentials
-        );
-
-        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-
-        // Debug log the generated token
-        _logger.LogDebug("Generated JWT token for user {UserId}: {TokenPreview}...",
-            user.Id, tokenString.Substring(0, Math.Min(50, tokenString.Length)));
-
-        return tokenString;
-    }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
