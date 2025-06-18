@@ -63,12 +63,11 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Step 2: Get token from IdentityServer4 using Resource Owner Password flow
-      const identityServerUrl =
-        process.env.NODE_ENV === "production"
-          ? "/identity-service/connect/token"
-          : "http://localhost:6004/identity-service/connect/token";
+      // Use API base URL + connect/token path
+      const tokenUrl = `${api.defaults.baseURL}/identity-service/connect/token`;
+      console.log("🔍 Token endpoint URL:", tokenUrl);
 
-      const tokenResponse = await fetch(identityServerUrl, {
+      const tokenResponse = await fetch(tokenUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -85,17 +84,24 @@ export const AuthProvider = ({ children }) => {
 
       if (!tokenResponse.ok) {
         const errorData = await tokenResponse.text();
-        console.error("❌ Token request failed:", errorData);
+        console.error(
+          "❌ Token request failed:",
+          tokenResponse.status,
+          errorData,
+        );
         return {
           success: false,
-          message: "Token alınamadı",
+          message: `Token alınamadı: ${tokenResponse.status}`,
         };
       }
 
       const tokenData = await tokenResponse.json();
+      console.log("🔍 Token response:", tokenData);
+
       const { access_token, token_type } = tokenData;
 
       if (!access_token) {
+        console.error("❌ No access_token in response:", tokenData);
         return {
           success: false,
           message: "Geçersiz token yanıtı",
@@ -119,7 +125,7 @@ export const AuthProvider = ({ children }) => {
         };
       }
 
-      // Store token
+      // Store token and user data
       localStorage.setItem("shopping_token", access_token);
       setToken(access_token);
       setUser(accountResponse.data.user);
@@ -131,7 +137,9 @@ export const AuthProvider = ({ children }) => {
         "✅ Login successful with IdentityServer4 token:",
         accountResponse.data.user,
       );
-      return { success: true };
+      console.log("✅ Authentication state updated");
+
+      return { success: true, user: accountResponse.data.user };
     } catch (error) {
       console.error("❌ Login error:", error);
       return {
