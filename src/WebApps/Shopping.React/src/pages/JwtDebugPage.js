@@ -10,13 +10,37 @@ const JwtDebugPage = () => {
   const testJwtGeneration = async () => {
     setLoading(true);
     try {
-      const response = await api.get("/identity-service/api/account/test-jwt");
+      // Test IdentityServer4 token endpoint directly
+      const tokenUrl = `${api.defaults.baseURL}/identity-service/connect/token`;
+      console.log("Testing token endpoint:", tokenUrl);
+
+      const response = await fetch(tokenUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          grant_type: "password",
+          client_id: "demo-client",
+          client_secret: "demo-secret",
+          username: "admin",
+          password: "Admin123!",
+          scope: "openid profile email shopping",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      }
+
+      const data = await response.json();
       setTestResults((prev) => ({
         ...prev,
         jwtGeneration: {
           success: true,
-          data: response.data,
-          token: response.data.token,
+          data: data,
+          token: data.access_token,
         },
       }));
     } catch (error) {
