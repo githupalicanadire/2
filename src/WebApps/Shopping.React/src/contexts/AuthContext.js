@@ -34,13 +34,10 @@ export const AuthProvider = ({ children }) => {
   const verifyToken = useCallback(async () => {
     try {
       setLoading(true);
-      console.log("🔍 Verifying token...");
       const response = await api.get("/identity-service/api/account/profile");
-      console.log("✅ Token verification successful:", response.data);
       setUser(response.data);
     } catch (error) {
       console.error("❌ Token verification failed:", error);
-      console.log("🧹 Clearing invalid token...");
       // Clear invalid token without calling logout to avoid loops
       localStorage.removeItem("shopping_token");
       setToken(null);
