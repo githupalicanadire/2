@@ -63,7 +63,12 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Step 2: Get token from IdentityServer4 using Resource Owner Password flow
-      const tokenResponse = await fetch("/identity-service/connect/token", {
+      const identityServerUrl =
+        process.env.NODE_ENV === "production"
+          ? "/identity-service/connect/token"
+          : "http://localhost:6004/identity-service/connect/token";
+
+      const tokenResponse = await fetch(identityServerUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
