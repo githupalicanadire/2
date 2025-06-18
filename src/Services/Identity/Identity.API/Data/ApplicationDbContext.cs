@@ -17,9 +17,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         // Configure ApplicationUser entity
         builder.Entity<ApplicationUser>(entity =>
         {
-            entity.Property(e => e.FirstName).HasMaxLength(50);
-            entity.Property(e => e.LastName).HasMaxLength(50);
+            entity.Property(e => e.FirstName).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.LastName).HasMaxLength(50).IsRequired();
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.LastLoginAt).IsRequired(false);
         });
     }
 }
