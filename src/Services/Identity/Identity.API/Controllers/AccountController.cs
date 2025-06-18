@@ -101,18 +101,14 @@ public class AccountController : ControllerBase
         user.LastLoginAt = DateTime.UtcNow;
         await _userManager.UpdateAsync(user);
 
-        // Get user claims
-        var userClaims = await _userManager.GetClaimsAsync(user);
-
-        // Generate JWT token
-        var token = GenerateJwtToken(user, userClaims);
-
         _logger.LogInformation("User {Username} logged in successfully", request.Username);
 
+        // Return success with user info - client should use IdentityServer4 token endpoint
         return Ok(new
         {
             message = "Login successful",
-            token = token,
+            needsToken = true,
+            tokenEndpoint = "/connect/token",
             user = new
             {
                 id = user.Id,
