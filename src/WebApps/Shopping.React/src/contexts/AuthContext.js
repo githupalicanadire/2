@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setLoading(false);
     }
-  }, [token]);
+  }, [token, verifyToken]);
 
   const logout = useCallback(() => {
     localStorage.removeItem("shopping_token");
