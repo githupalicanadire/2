@@ -71,68 +71,30 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      // Step 1: Validate credentials with our account endpoint
-      const accountResponse = await api.post(
-        "/identity-service/api/account/login",
-        {
-          username,
-          password,
-        },
-      );
+      // Direct login with JWT response (fuck IdentityServer4 complexity)
+      console.log("🔍 Logging in with direct JWT...");
 
-      if (!accountResponse.data || !accountResponse.data.needsToken) {
-        return {
-          success: false,
-          message: accountResponse.data?.message || "Login başarısız",
-        };
-      }
-
-      // Step 2: Get token from IdentityServer4 using Resource Owner Password flow
-      console.log("🔍 Making token request to IdentityServer4...");
-
-      const tokenRequestData = new URLSearchParams({
-        grant_type: "password",
-        client_id: "demo-client",
-        client_secret: "demo-secret",
-        username: username,
-        password: password,
-        scope: "openid profile email shopping",
+      const response = await api.post("/identity-service/api/account/login", {
+        username,
+        password,
       });
 
-      const tokenResponse = await api.post(
-        "/identity-service/connect/token",
-        tokenRequestData,
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        },
-      );
-
-      console.log("🔍 Token response:", tokenResponse.data);
-      const tokenData = tokenResponse.data;
-
-      const { access_token, token_type } = tokenData;
-
-      if (!access_token) {
-        console.error("❌ No access_token in response:", tokenData);
+      if (!response.data || !response.data.token) {
         return {
           success: false,
-          message: "Geçersiz token yanıtı",
+          message: response.data?.message || "Login başarısız",
         };
       }
 
+      const { token, user: userData } = response.data;
+
       // Debug: Check token format
-      console.log(
-        "🔍 Received IdentityServer4 token:",
-        token_type,
-        access_token.substring(0, 50),
-      );
-      const tokenParts = access_token.split(".");
+      console.log("🔍 Received JWT token:", token.substring(0, 50) + "...");
+      const tokenParts = token.split(".");
       console.log("🔍 Token parts count:", tokenParts.length);
 
       if (tokenParts.length !== 3) {
-        console.error("❌ Invalid JWT format from IdentityServer4");
+        console.error("❌ Invalid JWT format");
         return {
           success: false,
           message: "Geçersiz token formatı",
@@ -140,47 +102,34 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Store token and user data
-      localStorage.setItem("shopping_token", access_token);
+      localStorage.setItem("shopping_token", token);
 
       // Set authorization header
-      api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
       // Update state
-      console.log("🔄 Setting token:", access_token.substring(0, 20) + "...");
-      console.log("🔄 Setting user:", accountResponse.data.user);
+      console.log("🔄 Setting token and user data...");
+      setToken(token);
+      setUser(userData);
 
-      setToken(access_token);
-      setUser(accountResponse.data.user);
-
-      console.log("✅ Login successful with IdentityServer4 token");
+      console.log("✅ Login successful with direct JWT");
       console.log(
         "✅ Authentication state updated - token:",
-        !!access_token,
+        !!token,
         "user:",
-        !!accountResponse.data.user,
+        !!userData,
       );
 
-      return { success: true, user: accountResponse.data.user };
+      return { success: true, user: userData };
     } catch (error) {
       console.error("❌ Login error:", error);
 
-      let errorMessage = "Giriş yapılırken hata oluştu";
-
-      if (error.response?.status === 400) {
-        errorMessage =
-          "IdentityServer4 hatası: Client bulunamadı veya CORS problemi";
-      } else if (error.response?.data) {
-        errorMessage =
-          error.response.data.error_description ||
-          error.response.data.message ||
-          `HTTP ${error.response.status} hatası`;
-      } else {
-        errorMessage = error.message;
-      }
-
       return {
         success: false,
-        message: errorMessage,
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Giriş yapılırken hata oluştu",
       };
     } finally {
       setLoading(false);
