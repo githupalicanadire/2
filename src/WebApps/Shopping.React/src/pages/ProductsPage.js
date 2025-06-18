@@ -133,6 +133,19 @@ const ProductsPage = () => {
 
   return (
     <div className="products-page">
+      {/* Notification */}
+      {notification && (
+        <div className={`notification notification-${notification.type}`}>
+          {notification.message}
+          <button
+            className="notification-close"
+            onClick={() => setNotification(null)}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="page-header">
         <h1>🎁 Oyuncak Dünyamız 🌟</h1>
         <p>🧸 Hayal ettiğiniz her oyuncak burada! 🎮</p>
