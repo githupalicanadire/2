@@ -163,12 +163,24 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: accountResponse.data.user };
     } catch (error) {
       console.error("❌ Login error:", error);
+
+      let errorMessage = "Giriş yapılırken hata oluştu";
+
+      if (error.response?.status === 400) {
+        errorMessage =
+          "IdentityServer4 hatası: Client bulunamadı veya CORS problemi";
+      } else if (error.response?.data) {
+        errorMessage =
+          error.response.data.error_description ||
+          error.response.data.message ||
+          `HTTP ${error.response.status} hatası`;
+      } else {
+        errorMessage = error.message;
+      }
+
       return {
         success: false,
-        message:
-          error.response?.data?.message ||
-          error.message ||
-          "Giriş yapılırken hata oluştu",
+        message: errorMessage,
       };
     } finally {
       setLoading(false);
