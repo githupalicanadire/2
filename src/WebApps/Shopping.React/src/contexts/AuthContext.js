@@ -28,7 +28,6 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUser(null);
     delete api.defaults.headers.common["Authorization"];
-    console.log("👋 User logged out");
   }, []);
 
   const verifyToken = useCallback(async () => {
