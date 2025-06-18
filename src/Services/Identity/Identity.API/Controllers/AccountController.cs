@@ -214,7 +214,7 @@ public class AccountController : ControllerBase
     public IActionResult TestJwt()
     {
         return Ok(new {
-            message = "IdentityServer4 is running with in-memory configuration",
+            message = "IdentityServer (Duende) is running with in-memory configuration",
             tokenEndpoint = "/connect/token",
             loginFlow = new {
                 step1 = "POST /api/account/login (validate credentials)",
@@ -229,13 +229,13 @@ public class AccountController : ControllerBase
     {
         try
         {
-            var configDbContext = HttpContext.RequestServices.GetRequiredService<IdentityServer4.EntityFramework.DbContexts.ConfigurationDbContext>();
+            var configDbContext = HttpContext.RequestServices.GetRequiredService<Duende.IdentityServer.EntityFramework.DbContexts.ConfigurationDbContext>();
 
             var clients = await configDbContext.Clients
                 .Select(c => new { c.Id, c.ClientId, c.ClientName, c.Enabled })
                 .ToListAsync();
 
-            var corsOrigins = await configDbContext.Set<IdentityServer4.EntityFramework.Entities.ClientCorsOrigin>()
+            var corsOrigins = await configDbContext.Set<Duende.IdentityServer.EntityFramework.Entities.ClientCorsOrigin>()
                 .Select(co => new { co.ClientId, co.Origin })
                 .ToListAsync();
 

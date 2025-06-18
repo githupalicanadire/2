@@ -1,5 +1,5 @@
-using IdentityServer4.Models;
-using IdentityServer4;
+using Duende.IdentityServer.Models;
+using Duende.IdentityServer;
 
 namespace Identity.API.Configuration;
 
@@ -22,6 +22,7 @@ public static class Config
             new ApiScope("basket", "Basket Service"),
             new ApiScope("ordering", "Ordering Service"),
             new ApiScope("gateway", "API Gateway"),
+            new ApiScope("shopping_api", "Shopping API"),
 
             // Full access scope
             new ApiScope("shopping", "Shopping Application Full Access")
@@ -32,19 +33,19 @@ public static class Config
         {
             new ApiResource("catalog-api", "Catalog API")
             {
-                Scopes = { "catalog", "shopping" }
+                Scopes = { "catalog", "shopping", "shopping_api" }
             },
             new ApiResource("basket-api", "Basket API")
             {
-                Scopes = { "basket", "shopping" }
+                Scopes = { "basket", "shopping", "shopping_api" }
             },
             new ApiResource("ordering-api", "Ordering API")
             {
-                Scopes = { "ordering", "shopping" }
+                Scopes = { "ordering", "shopping", "shopping_api" }
             },
             new ApiResource("gateway-api", "Gateway API")
             {
-                Scopes = { "gateway", "shopping", "catalog", "basket", "ordering" }
+                Scopes = { "gateway", "shopping", "shopping_api", "catalog", "basket", "ordering" }
             }
         };
 
@@ -56,7 +57,11 @@ public static class Config
             {
                 ClientId = "shopping-spa",
                 ClientName = "Shopping React SPA",
-                AllowedGrantTypes = GrantTypes.Code,
+                AllowedGrantTypes = new List<string> 
+                { 
+                    GrantTypes.Code.First(),
+                    GrantTypes.ResourceOwnerPassword.First()
+                },
                 RequirePkce = true,
                 RequireClientSecret = false,
                 RequireConsent = false,
@@ -80,6 +85,7 @@ public static class Config
                     IdentityServerConstants.StandardScopes.Email,
                     "roles",
                     "shopping",
+                    "shopping_api",
                     "catalog",
                     "basket",
                     "ordering"
@@ -144,6 +150,7 @@ public static class Config
                     IdentityServerConstants.StandardScopes.Email,
                     "roles",
                     "shopping",
+                    "shopping_api",
                     "catalog",
                     "basket",
                     "ordering"

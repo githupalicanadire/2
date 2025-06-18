@@ -10,26 +10,24 @@ const CartPage = () => {
   const [error, setError] = useState(null);
 
   const { getCurrentUser } = useAuth();
-  const userName = getCurrentUser();
+  const user = getCurrentUser();
 
   useEffect(() => {
     fetchBasket();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchBasket = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await basketService.getBasket(userName);
+      const response = await basketService.getBasket(user);
       console.log("🛒 Fetched basket:", response);
       setBasket(response);
     } catch (err) {
       console.error("❌ Basket fetch error:", err);
       setError(err.message);
-      // Initialize empty basket if not found
       setBasket({
-        userName: userName,
+        userName: user,
         items: [],
         totalPrice: 0,
       });
@@ -64,7 +62,7 @@ const CartPage = () => {
         totalPrice: updatedItems.reduce((sum, item) => sum + item.price, 0),
       };
 
-      console.log("��� Updating basket quantity:", updatedBasket);
+      console.log("🛒 Updating basket quantity:", updatedBasket);
       await basketService.storeBasket(updatedBasket);
       setBasket(updatedBasket);
       setError(null); // Clear any previous errors
@@ -113,10 +111,10 @@ const CartPage = () => {
     }
 
     try {
-      console.log("🧹 Clearing basket for user:", userName);
-      await basketService.deleteBasket(userName);
+      console.log("🧹 Clearing basket for user:", user);
+      await basketService.deleteBasket(user);
       setBasket({
-        userName: userName,
+        userName: user,
         items: [],
         totalPrice: 0,
       });

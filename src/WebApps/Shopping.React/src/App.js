@@ -15,6 +15,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DebugPage from "./pages/DebugPage";
 import JwtDebugPage from "./pages/JwtDebugPage";
+import CallbackPage from "./pages/CallbackPage";
 
 function App() {
   return (
@@ -25,17 +26,10 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomePage />} />
-            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/callback" element={<CallbackPage />} />
 
             {/* Auth routes - only for non-authenticated users */}
-            <Route
-              path="/login"
-              element={
-                <ProtectedRoute requireAuth={false}>
-                  <LoginPage />
-                </ProtectedRoute>
-              }
-            />
             <Route
               path="/register"
               element={
@@ -46,6 +40,14 @@ function App() {
             />
 
             {/* Protected routes - require authentication */}
+            <Route
+              path="/products"
+              element={
+                <ProtectedRoute>
+                  <ProductsPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/cart"
               element={

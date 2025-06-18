@@ -1,51 +1,28 @@
 import React, { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import "./LoginPage.css";
 
 const LoginPage = () => {
-  const [formData, setFormData] = useState({
-    username: "",
-    password: "",
-  });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
   const { login } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  // Get redirect path from location state or default to home
-  const from = location.state?.from?.pathname || "/";
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-    // Clear error when user starts typing
-    if (error) setError("");
-  };
-
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
-
-    console.log("🔍 LoginPage: Starting login with:", formData.username);
-    const result = await login(formData.username, formData.password);
-    console.log("🔍 LoginPage: Login result:", result);
-
-    if (result.success) {
-      console.log("✅ LoginPage: Login successful, redirecting to:", from);
-      // Redirect to intended page or home
-      navigate(from, { replace: true });
-    } else {
-      console.log("❌ LoginPage: Login failed:", result.message);
-      setError(result.message);
+    
+    try {
+      const result = await login(username, password);
+      if (!result.success) {
+        setError(result.message);
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      setError(error.message || "Giriş başarısız. Lütfen kullanıcı adı ve şifrenizi kontrol edin.");
     }
-
-    setLoading(false);
   };
 
   return (
@@ -56,43 +33,33 @@ const LoginPage = () => {
           <p>Hesabınıza giriş yaparak alışverişe devam edin</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          {error && <div className="error-message">⚠️ {error}</div>}
-
+        <form className="login-form" onSubmit={handleLogin}>
+          {error && <div className="error-message">{error}</div>}
+          
           <div className="form-group">
-            <label htmlFor="username">👤 Kullanıcı Adı</label>
+            <label htmlFor="username">Kullanıcı Adı</label>
             <input
               type="text"
               id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
-              placeholder="Kullanıcı adınızı girin"
-              disabled={loading}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">🔒 Şifre</label>
+            <label htmlFor="password">Şifre</label>
             <input
               type="password"
               id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="Şifrenizi girin"
-              disabled={loading}
             />
           </div>
 
-          <button
-            type="submit"
-            className="login-btn"
-            disabled={loading || !formData.username || !formData.password}
-          >
-            {loading ? "🔄 Giriş yapılıyor..." : "🚀 Giriş Yap"}
+          <button type="submit" className="login-btn">
+            🚀 Giriş Yap
           </button>
         </form>
 
@@ -103,17 +70,6 @@ const LoginPage = () => {
               🎉 Ücretsiz Kayıt Ol
             </Link>
           </p>
-
-          <div className="demo-info">
-            <h4>🔧 Test Hesapları</h4>
-            <p>
-              <strong>Admin:</strong> admin / Admin123!
-            </p>
-            <p>
-              <strong>Demo:</strong> swn / Password123!
-            </p>
-            <small>⚠️ Bu demo kullanıcıları test amaçlıdır</small>
-          </div>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-const ProtectedRoute = ({ children, requireAuth = true }) => {
+const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
 
@@ -10,31 +10,22 @@ const ProtectedRoute = ({ children, requireAuth = true }) => {
   if (loading) {
     return (
       <div
-        className="loading-container"
         style={{
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          minHeight: "60vh",
-          fontSize: "1.2rem",
-          color: "#667eea",
+          height: "100vh",
         }}
       >
-        🔄 Yükleniyor...
+        <div>🔄 Yükleniyor...</div>
       </div>
     );
   }
 
   // If route requires authentication and user is not authenticated
-  if (requireAuth && !isAuthenticated()) {
+  if (!isAuthenticated()) {
     // Redirect to login with the attempted location
     return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // If route is for unauthenticated users (like login/register) and user is authenticated
-  if (!requireAuth && isAuthenticated()) {
-    // Redirect to home or intended page
-    return <Navigate to={location.state?.from?.pathname || "/"} replace />;
   }
 
   // Render the protected component
