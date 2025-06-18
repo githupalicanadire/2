@@ -32,12 +32,16 @@ const LoginPage = () => {
     setLoading(true);
     setError("");
 
+    console.log("🔍 LoginPage: Starting login with:", formData.username);
     const result = await login(formData.username, formData.password);
+    console.log("🔍 LoginPage: Login result:", result);
 
     if (result.success) {
+      console.log("✅ LoginPage: Login successful, redirecting to:", from);
       // Redirect to intended page or home
       navigate(from, { replace: true });
     } else {
+      console.log("❌ LoginPage: Login failed:", result.message);
       setError(result.message);
     }
 
