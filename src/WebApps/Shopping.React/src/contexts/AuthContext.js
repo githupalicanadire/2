@@ -218,7 +218,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAuthenticated = () => {
-    return !!token && !!user;
+    const result = !!token && !!user;
+    console.log(
+      "🔍 isAuthenticated check - token:",
+      !!token,
+      "user:",
+      !!user,
+      "result:",
+      result,
+    );
+    return result;
   };
 
   const getCurrentUser = () => {
