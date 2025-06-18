@@ -138,7 +138,14 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-app.UseCors("CorsPolicy");
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("DevelopmentCors");
+}
+else
+{
+    app.UseCors("CorsPolicy");
+}
 
 app.UseStaticFiles();
 app.UseRouting();
