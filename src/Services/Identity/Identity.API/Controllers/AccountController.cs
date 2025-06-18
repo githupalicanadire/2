@@ -178,33 +178,19 @@ public class AccountController : ControllerBase
     [HttpGet("test-jwt")]
     public IActionResult TestJwt()
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-            jwtSettings["SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast256BitsLong!"));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var tokenClaims = new List<Claim>
-        {
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Sub, "test-user-id"),
-            new("username", "testuser"),
-            new(JwtRegisteredClaimNames.Email, "test@test.com"),
-            new(JwtRegisteredClaimNames.Name, "Test User")
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"] ?? "https://localhost:6007",
-            audience: jwtSettings["Audience"] ?? "shopping-spa",
-            claims: tokenClaims,
-            expires: DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["ExpirationMinutes"] ?? "60")),
-            signingCredentials: credentials
-        );
-
-        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-
-        _logger.LogInformation("Generated test JWT: {Token}", tokenString);
-
-        return Ok(new { token = tokenString, message = "Test JWT generated successfully" });
+        return Ok(new {
+            message = "Use IdentityServer4 token endpoint instead",
+            tokenEndpoint = "/connect/token",
+            sampleRequest = new
+            {
+                grant_type = "password",
+                client_id = "demo-client",
+                client_secret = "demo-secret",
+                username = "admin",
+                password = "Admin123!",
+                scope = "openid profile email shopping"
+            }
+        });
     }
 }
 
