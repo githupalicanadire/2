@@ -43,11 +43,13 @@ builder.Services.AddIdentityServer(options =>
 {
     options.ConfigureDbContext = b => b.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         sql => sql.MigrationsAssembly(migrationsAssembly));
+    options.DefaultSchema = "dbo";
 })
 .AddOperationalStore(options =>
 {
     options.ConfigureDbContext = b => b.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
         sql => sql.MigrationsAssembly(migrationsAssembly));
+    options.DefaultSchema = "dbo";
 })
 .AddAspNetIdentity<ApplicationUser>()
 .AddDeveloperSigningCredential(); // For development only
