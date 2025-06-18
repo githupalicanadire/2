@@ -72,12 +72,20 @@ const ProductsPage = () => {
     }
   };
 
+  const showNotification = (message, type = "success") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
   const addToCart = async (product) => {
     try {
       setAddingToCart((prev) => ({ ...prev, [product.id]: true }));
 
       if (!isAuthenticated()) {
-        alert("🔐 Sepete ürün eklemek için giriş yapmalısınız!");
+        showNotification(
+          "🔐 Sepete ürün eklemek için giriş yapmalısınız!",
+          "warning",
+        );
         return;
       }
 
@@ -94,10 +102,13 @@ const ProductsPage = () => {
       await basketService.addItemToBasket(userName, item);
 
       // Başarı mesajı göster
-      alert(`🎉 ${product.name} sepetinize eklendi! 🛒`);
+      showNotification(`🎉 ${product.name} sepetinize eklendi! 🛒`);
     } catch (error) {
       console.error("Add to cart error:", error);
-      alert(`😔 Ürün sepete eklenirken hata oluştu: ${error.message}`);
+      showNotification(
+        `😔 Ürün sepete eklenirken hata oluştu: ${error.message}`,
+        "error",
+      );
     } finally {
       setAddingToCart((prev) => ({ ...prev, [product.id]: false }));
     }
