@@ -220,7 +220,7 @@ public static class SeedData
         }
     }
 
-    private static async Task SeedUsers(IServiceProvider serviceProvider)
+    public static async Task SeedUsers(IServiceProvider serviceProvider)
     {
         var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
