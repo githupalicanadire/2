@@ -101,13 +101,14 @@ const LoginPage = () => {
           </p>
 
           <div className="demo-info">
-            <h4>🔧 Test Hesabı</h4>
+            <h4>🔧 Test Hesapları</h4>
             <p>
               <strong>Admin:</strong> admin / Admin123!
             </p>
             <p>
               <strong>Demo:</strong> swn / Password123!
             </p>
+            <small>⚠️ Bu demo kullanıcıları test amaçlıdır</small>
           </div>
         </div>
       </div>
