@@ -178,9 +178,9 @@ async Task InitializeDatabase(WebApplication app)
 
             Log.Information("ℹ️ Skipping IdentityServer4 database migration - using in-memory configuration");
 
-            Log.Information("🌱 Starting data seeding...");
-            // Seed data
-            await SeedData.EnsureSeedData(serviceScope.ServiceProvider);
+            Log.Information("🌱 Starting user seeding...");
+            // Seed users only (IdentityServer4 uses in-memory config)
+            await SeedData.SeedUsers(serviceScope.ServiceProvider);
 
             Log.Information("✅ Database initialization completed successfully");
             return;
