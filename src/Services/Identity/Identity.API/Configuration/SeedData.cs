@@ -195,8 +195,8 @@ public static class SeedData
                 VALUES (1, 'demo-client', 'oidc', 1, 'Demo Client', 0, 1, 3600, 1, 2592000, GETUTCDATE(), 0)
             ");
 
-            // Get the client ID
-            var clientId = await configurationDbContext.Database.ExecuteSqlRawAsync(@"
+            // Add client details
+            await configurationDbContext.Database.ExecuteSqlRawAsync(@"
                 DECLARE @ClientPkId INT = (SELECT Id FROM Clients WHERE ClientId = 'demo-client');
 
                 INSERT INTO ClientSecrets (Description, Value, Expiration, Type, Created, ClientId)
