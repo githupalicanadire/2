@@ -208,20 +208,24 @@ public class AccountController : ControllerBase
     }
 
     [HttpGet("test-jwt")]
-    public IActionResult TestJwt()
+    public async Task<IActionResult> TestJwt()
     {
+        // Generate test JWT with admin user
+        var adminUser = await _userManager.FindByNameAsync("admin");
+        if (adminUser == null)
+        {
+            return Ok(new {
+                error = "Admin user not found",
+                message = "Use POST /api/account/login instead"
+            });
+        }
+
+        var testToken = GenerateJwtToken(adminUser);
+
         return Ok(new {
-            message = "Use IdentityServer4 token endpoint instead",
-            tokenEndpoint = "/connect/token",
-            sampleRequest = new
-            {
-                grant_type = "password",
-                client_id = "demo-client",
-                client_secret = "demo-secret",
-                username = "admin",
-                password = "Admin123!",
-                scope = "openid profile email shopping"
-            }
+            message = "Custom JWT generated successfully",
+            token = testToken,
+            loginEndpoint = "/api/account/login"
         });
     }
 
