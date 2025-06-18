@@ -53,6 +53,27 @@ export const AuthProvider = ({ children }) => {
       if (response.data && response.data.token) {
         const { token: newToken, user: userData } = response.data;
 
+        // Debug: Check token format before storing
+        console.log(
+          "🔍 Received token:",
+          typeof newToken,
+          newToken?.substring(0, 50),
+        );
+        const tokenParts = newToken?.split(".");
+        console.log("🔍 Token parts count:", tokenParts?.length);
+
+        if (
+          !newToken ||
+          typeof newToken !== "string" ||
+          tokenParts?.length !== 3
+        ) {
+          console.error("❌ Invalid token received from server");
+          return {
+            success: false,
+            message: "Geçersiz token formatı",
+          };
+        }
+
         // Store token
         localStorage.setItem("shopping_token", newToken);
         setToken(newToken);
