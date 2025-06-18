@@ -39,13 +39,13 @@ public class AccountController : ControllerBase
 
         var tokenClaims = new List<Claim>
         {
-            new("jti", Guid.NewGuid().ToString()),
-            new("sub", user.Id),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new("username", user.UserName ?? ""),
-            new("email", user.Email ?? ""),
-            new("given_name", user.FirstName),
-            new("family_name", user.LastName),
-            new("name", user.FullName)
+            new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
+            new(JwtRegisteredClaimNames.GivenName, user.FirstName),
+            new(JwtRegisteredClaimNames.FamilyName, user.LastName),
+            new(JwtRegisteredClaimNames.Name, user.FullName)
         };
 
         // Add user claims
