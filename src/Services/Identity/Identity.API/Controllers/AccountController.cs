@@ -31,6 +31,36 @@ public class AccountController : ControllerBase
         _configuration = configuration;
     }
 
+    private string GenerateJwtToken(ApplicationUser user)
+    {
+        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+            jwtSettings["SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast256BitsLong!ForToyLandApp2024"));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Sub, user.Id),
+            new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
+            new(JwtRegisteredClaimNames.GivenName, user.FirstName),
+            new(JwtRegisteredClaimNames.FamilyName, user.LastName),
+            new(JwtRegisteredClaimNames.Name, user.FullName),
+            new("username", user.UserName ?? ""),
+            new("role", "customer")
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: jwtSettings["Issuer"] ?? "http://identity.api:8080",
+            audience: jwtSettings["Audience"] ?? "shopping-spa",
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["ExpirationMinutes"] ?? "60")),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
 
 
 
