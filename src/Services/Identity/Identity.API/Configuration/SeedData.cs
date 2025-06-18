@@ -16,10 +16,10 @@ public static class SeedData
     {
         Log.Information("🌱 Seeding database...");
 
-        // Seed IdentityServer configuration data
-        await SeedIdentityServerConfigurationData(serviceProvider);
+        // Skip IdentityServer4 seeding (using custom JWT instead)
+        Log.Information("ℹ️ Skipping IdentityServer4 configuration seeding - using custom JWT");
 
-        // Seed users
+        // Seed users only
         await SeedUsers(serviceProvider);
 
         Log.Information("✅ Database seeding completed");
