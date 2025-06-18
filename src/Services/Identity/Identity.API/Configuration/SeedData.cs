@@ -187,54 +187,36 @@ public static class SeedData
     {
         try
         {
-            Log.Information("🔧 Creating demo-client manually...");
+            Log.Information("🔧 Creating demo-client manually via direct SQL...");
 
-            // Create demo-client entity manually
-            var demoClient = new IdentityServer4.EntityFramework.Entities.Client
-            {
-                ClientId = "demo-client",
-                ClientName = "Demo Client",
-                Enabled = true,
-                RequireClientSecret = true,
-                RequireConsent = false,
-                AllowOfflineAccess = true,
-                AccessTokenLifetime = 3600,
-                RefreshTokenExpiration = 1, // Sliding
-                SlidingRefreshTokenLifetime = 2592000, // 30 days
-                ClientSecrets = new List<IdentityServer4.EntityFramework.Entities.ClientSecret>
-                {
-                    new IdentityServer4.EntityFramework.Entities.ClientSecret
-                    {
-                        Value = IdentityServer4.Models.HashExtensions.Sha256("demo-secret"),
-                        Type = "SharedSecret"
-                    }
-                },
-                AllowedGrantTypes = new List<IdentityServer4.EntityFramework.Entities.ClientGrantType>
-                {
-                    new IdentityServer4.EntityFramework.Entities.ClientGrantType { GrantType = "password" }
-                },
-                AllowedScopes = new List<IdentityServer4.EntityFramework.Entities.ClientScope>
-                {
-                    new IdentityServer4.EntityFramework.Entities.ClientScope { Scope = "openid" },
-                    new IdentityServer4.EntityFramework.Entities.ClientScope { Scope = "profile" },
-                    new IdentityServer4.EntityFramework.Entities.ClientScope { Scope = "email" },
-                    new IdentityServer4.EntityFramework.Entities.ClientScope { Scope = "shopping" }
-                },
-                AllowedCorsOrigins = new List<IdentityServer4.EntityFramework.Entities.ClientCorsOrigin>
-                {
-                    new IdentityServer4.EntityFramework.Entities.ClientCorsOrigin { Origin = "http://localhost:6006" },
-                    new IdentityServer4.EntityFramework.Entities.ClientCorsOrigin { Origin = "http://localhost:3000" }
-                }
-            };
+            // Use direct SQL to bypass AutoMapper issues
+            await configurationDbContext.Database.ExecuteSqlRawAsync(@"
+                INSERT INTO Clients (Enabled, ClientId, ProtocolType, RequireClientSecret, ClientName, RequireConsent, AllowOfflineAccess, AccessTokenLifetime, RefreshTokenExpiration, SlidingRefreshTokenLifetime, Created, NonEditable)
+                VALUES (1, 'demo-client', 'oidc', 1, 'Demo Client', 0, 1, 3600, 1, 2592000, GETUTCDATE(), 0)
+            ");
 
-            await configurationDbContext.Clients.AddAsync(demoClient);
-            await configurationDbContext.SaveChangesAsync();
+            // Get the client ID
+            var clientId = await configurationDbContext.Database.ExecuteSqlRawAsync(@"
+                DECLARE @ClientPkId INT = (SELECT Id FROM Clients WHERE ClientId = 'demo-client');
 
-            Log.Information("✅ demo-client created manually");
+                INSERT INTO ClientSecrets (Description, Value, Expiration, Type, Created, ClientId)
+                VALUES ('Demo Secret', 'K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols=', NULL, 'SharedSecret', GETUTCDATE(), @ClientPkId);
+
+                INSERT INTO ClientGrantTypes (GrantType, ClientId)
+                VALUES ('password', @ClientPkId);
+
+                INSERT INTO ClientScopes (Scope, ClientId)
+                VALUES ('openid', @ClientPkId), ('profile', @ClientPkId), ('email', @ClientPkId), ('shopping', @ClientPkId);
+
+                INSERT INTO ClientCorsOrigins (Origin, ClientId)
+                VALUES ('http://localhost:6006', @ClientPkId), ('http://localhost:3000', @ClientPkId);
+            ");
+
+            Log.Information("✅ demo-client created successfully via SQL");
         }
         catch (Exception ex)
         {
-            Log.Error("❌ Failed to create demo-client manually: {Error}", ex.Message);
+            Log.Error("❌ Failed to create demo-client via SQL: {Error}", ex.Message);
         }
     }
 
