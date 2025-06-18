@@ -180,9 +180,13 @@ public class AccountController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetProfile()
     {
+        _logger.LogInformation("Getting profile for user. Claims: {Claims}",
+            string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
+
         var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
         if (string.IsNullOrEmpty(userId))
         {
+            _logger.LogWarning("No sub claim found in token");
             return BadRequest(new { message = "User ID not found" });
         }
 
