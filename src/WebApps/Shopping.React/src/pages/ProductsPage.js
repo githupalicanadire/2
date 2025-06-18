@@ -28,6 +28,7 @@ const ProductsPage = () => {
   const [pageSize] = useState(12);
   const [totalCount, setTotalCount] = useState(0);
   const [addingToCart, setAddingToCart] = useState({});
+  const [notification, setNotification] = useState(null);
 
   const { getCurrentUser, isAuthenticated } = useAuth();
 
