@@ -50,6 +50,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     try {
       setLoading(true);
+      console.log("🔍 Starting login process...");
 
       // Step 1: Validate credentials
       const accountResponse = await api.post(
@@ -60,7 +61,10 @@ export const AuthProvider = ({ children }) => {
         },
       );
 
+      console.log("🔍 Account validation response:", accountResponse.data);
+
       if (!accountResponse.data || !accountResponse.data.needsToken) {
+        console.log("❌ No needsToken flag, stopping login");
         return {
           success: false,
           message: accountResponse.data?.message || "Login başarısız",
@@ -69,6 +73,7 @@ export const AuthProvider = ({ children }) => {
 
       // Step 2: Get token from IdentityServer4
       const tokenUrl = `${api.defaults.baseURL}/identity-service/connect/token`;
+      console.log("🔍 Token URL:", tokenUrl);
 
       const tokenResponse = await fetch(tokenUrl, {
         method: "POST",
