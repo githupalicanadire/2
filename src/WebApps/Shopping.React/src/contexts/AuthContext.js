@@ -210,14 +210,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("shopping_token");
-    setToken(null);
-    setUser(null);
-    delete api.defaults.headers.common["Authorization"];
-    console.log("👋 User logged out");
-  };
-
   const isAuthenticated = () => {
     return !!token && !!user;
   };
