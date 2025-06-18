@@ -32,10 +32,13 @@ export const AuthProvider = ({ children }) => {
   const verifyToken = async () => {
     try {
       setLoading(true);
+      console.log("🔍 Verifying token...");
       const response = await api.get("/identity-service/api/account/profile");
+      console.log("✅ Token verification successful:", response.data);
       setUser(response.data);
     } catch (error) {
-      console.error("Token verification failed:", error);
+      console.error("❌ Token verification failed:", error);
+      console.log("🧹 Clearing invalid token...");
       logout(); // Invalid token, logout user
     } finally {
       setLoading(false);
