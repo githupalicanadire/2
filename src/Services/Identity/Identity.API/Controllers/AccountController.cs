@@ -85,15 +85,14 @@ public class AccountController : ControllerBase
         user.LastLoginAt = DateTime.UtcNow;
         await _userManager.UpdateAsync(user);
 
-        // Generate JWT token directly (fuck the seed data problems)
-        var token = GenerateJwtToken(user);
+        _logger.LogInformation("User {Username} logged in successfully", request.Username);
 
-        _logger.LogInformation("User {Username} logged in successfully with custom JWT", request.Username);
-
+        // Return success - client should use IdentityServer4 token endpoint
         return Ok(new
         {
             message = "Login successful",
-            token = token,
+            needsToken = true,
+            tokenEndpoint = "/connect/token",
             user = new
             {
                 id = user.Id,
