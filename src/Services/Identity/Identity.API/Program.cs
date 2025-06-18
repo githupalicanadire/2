@@ -147,11 +147,11 @@ async Task InitializeDatabase(WebApplication app)
 
             Log.Information("📊 Migrating PersistedGrantDbContext...");
             var persistedGrantDbContext = serviceScope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>();
-            await persistedGrantDbContext.Database.MigrateAsync();
+            await persistedGrantDbContext.Database.EnsureCreatedAsync();
 
             Log.Information("📊 Migrating ConfigurationDbContext...");
             var configurationDbContext = serviceScope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
-            await configurationDbContext.Database.MigrateAsync();
+            await configurationDbContext.Database.EnsureCreatedAsync();
 
             Log.Information("🌱 Starting data seeding...");
             // Seed data
