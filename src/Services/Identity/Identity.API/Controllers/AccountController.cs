@@ -37,35 +37,46 @@ public class AccountController : ControllerBase
             jwtSettings["SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast256BitsLong!"));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var tokenClaims = new List<Claim>
+        // Create a clean claims dictionary to avoid duplicates
+        var claimsDict = new Dictionary<string, string>
         {
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new("username", user.UserName ?? ""),
-            new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
-            new(JwtRegisteredClaimNames.GivenName, user.FirstName),
-            new(JwtRegisteredClaimNames.FamilyName, user.LastName),
-            new(JwtRegisteredClaimNames.Name, user.FullName)
+            [JwtRegisteredClaimNames.Jti] = Guid.NewGuid().ToString(),
+            [JwtRegisteredClaimNames.Sub] = user.Id,
+            [JwtRegisteredClaimNames.Email] = user.Email ?? "",
+            [JwtRegisteredClaimNames.GivenName] = user.FirstName,
+            [JwtRegisteredClaimNames.FamilyName] = user.LastName,
+            [JwtRegisteredClaimNames.Name] = user.FullName,
+            ["username"] = user.UserName ?? ""
         };
 
-        // Add user claims (exclude any that might conflict with standard claims)
-        var additionalClaims = claims.Where(c =>
-            !c.Type.Equals(JwtRegisteredClaimNames.Sub, StringComparison.OrdinalIgnoreCase) &&
-            !c.Type.Equals(JwtRegisteredClaimNames.Email, StringComparison.OrdinalIgnoreCase) &&
-            !c.Type.Equals(JwtRegisteredClaimNames.Name, StringComparison.OrdinalIgnoreCase) &&
-            !c.Type.Equals(JwtRegisteredClaimNames.GivenName, StringComparison.OrdinalIgnoreCase) &&
-            !c.Type.Equals(JwtRegisteredClaimNames.FamilyName, StringComparison.OrdinalIgnoreCase));
-        tokenClaims.AddRange(additionalClaims);
+        // Add only non-conflicting user claims
+        foreach (var claim in claims)
+        {
+            if (!claimsDict.ContainsKey(claim.Type) &&
+                !string.IsNullOrEmpty(claim.Value))
+            {
+                claimsDict[claim.Type] = claim.Value;
+            }
+        }
+
+        // Convert to Claim objects
+        var tokenClaims = claimsDict.Select(kvp => new Claim(kvp.Key, kvp.Value)).ToList();
 
         var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"] ?? "https://localhost:6007",
+            issuer: jwtSettings["Issuer"] ?? "http://identity.api:8080",
             audience: jwtSettings["Audience"] ?? "shopping-spa",
             claims: tokenClaims,
             expires: DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["ExpirationMinutes"] ?? "60")),
             signingCredentials: credentials
         );
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+        // Debug log the generated token
+        _logger.LogDebug("Generated JWT token for user {UserId}: {TokenPreview}...",
+            user.Id, tokenString.Substring(0, Math.Min(50, tokenString.Length)));
+
+        return tokenString;
     }
 
     [HttpPost("login")]
