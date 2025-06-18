@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("shopping_token"));
   const [loading, setLoading] = useState(true);
 
-  // Define functions first
+  // Define all functions first
   const logout = useCallback(() => {
     localStorage.removeItem("shopping_token");
     setToken(null);
@@ -36,8 +36,8 @@ export const AuthProvider = ({ children }) => {
       const response = await api.get("/identity-service/api/account/profile");
       setUser(response.data);
     } catch (error) {
-      console.error("❌ Token verification failed:", error);
-      // Clear invalid token without calling logout to avoid loops
+      console.error("Token verification failed:", error);
+      // Clear invalid token
       localStorage.removeItem("shopping_token");
       setToken(null);
       setUser(null);
@@ -46,19 +46,6 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   }, []);
-
-  // Set token in API headers if exists
-  useEffect(() => {
-    if (token) {
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      // Verify token and get user info
-      verifyToken();
-    } else {
-      delete api.defaults.headers.common["Authorization"];
-      setUser(null);
-      setLoading(false);
-    }
-  }, [token, verifyToken]);
 
   const login = async (username, password) => {
     try {
@@ -80,7 +67,7 @@ export const AuthProvider = ({ children }) => {
         };
       }
 
-      // Step 2: Get token from IdentityServer4 (in-memory config now)
+      // Step 2: Get token from IdentityServer4
       const tokenUrl = `${api.defaults.baseURL}/identity-service/connect/token`;
 
       const tokenResponse = await fetch(tokenUrl, {
@@ -100,11 +87,7 @@ export const AuthProvider = ({ children }) => {
 
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text();
-        console.error(
-          "❌ Token request failed:",
-          tokenResponse.status,
-          errorText,
-        );
+        console.error("Token request failed:", tokenResponse.status, errorText);
         return {
           success: false,
           message: `IdentityServer4 error: ${tokenResponse.status}`,
@@ -130,7 +113,7 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user: accountResponse.data.user };
     } catch (error) {
-      console.error("❌ Login error:", error);
+      console.error("Login error:", error);
 
       return {
         success: false,
@@ -158,13 +141,12 @@ export const AuthProvider = ({ children }) => {
         },
       );
 
-      console.log("✅ Registration successful:", response.data);
       return {
         success: true,
         message: "Kayıt başarılı! Şimdi giriş yapabilirsiniz.",
       };
     } catch (error) {
-      console.error("❌ Registration error:", error);
+      console.error("Registration error:", error);
       return {
         success: false,
         message:
@@ -188,6 +170,18 @@ export const AuthProvider = ({ children }) => {
   const getCurrentCustomerId = () => {
     return user?.id || null;
   };
+
+  // Effects
+  useEffect(() => {
+    if (token) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      verifyToken();
+    } else {
+      delete api.defaults.headers.common["Authorization"];
+      setUser(null);
+      setLoading(false);
+    }
+  }, [token, verifyToken]);
 
   const value = {
     user,
