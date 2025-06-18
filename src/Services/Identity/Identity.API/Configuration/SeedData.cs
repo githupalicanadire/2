@@ -131,7 +131,9 @@ public static class SeedData
         try
         {
             // Force re-seed for development to update CORS settings
-            var shouldReseedClients = Environment.GetEnvironmentVariable("FORCE_RESEED_CLIENTS") == "true";
+            var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+            var shouldReseedClients = configuration["ForceReseedClients"] == "true" ||
+                                     Environment.GetEnvironmentVariable("FORCE_RESEED_CLIENTS") == "true";
 
             if (shouldReseedClients)
             {
