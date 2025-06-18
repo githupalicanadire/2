@@ -50,83 +50,37 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     try {
       setLoading(true);
-      console.log("🔍 Starting login process...");
+      console.log("🔍 Starting direct JWT login...");
 
-      // Step 1: Validate credentials
-      const accountResponse = await api.post(
-        "/identity-service/api/account/login",
-        {
-          username,
-          password,
-        },
-      );
-
-      console.log("🔍 Account validation response:", accountResponse.data);
-
-      if (!accountResponse.data || !accountResponse.data.needsToken) {
-        console.log("❌ No needsToken flag, stopping login");
-        return {
-          success: false,
-          message: accountResponse.data?.message || "Login başarısız",
-        };
-      }
-
-      // Step 2: Get token from IdentityServer4
-      const tokenUrl = `${api.defaults.baseURL}/identity-service/connect/token`;
-      console.log("🔍 Token URL:", tokenUrl);
-
-      const tokenResponse = await fetch(tokenUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          grant_type: "password",
-          client_id: "demo-client",
-          client_secret: "demo-secret",
-          username: username,
-          password: password,
-          scope: "openid profile email shopping",
-        }),
+      // Direct login with JWT token
+      const response = await api.post("/identity-service/api/account/login", {
+        username,
+        password,
       });
 
-      if (!tokenResponse.ok) {
-        const errorText = await tokenResponse.text();
-        console.error(
-          "❌ Token request failed:",
-          tokenResponse.status,
-          errorText,
-        );
+      console.log("🔍 Login response:", response.data);
+
+      if (!response.data || !response.data.token) {
+        console.log("❌ No token in response");
         return {
           success: false,
-          message: `IdentityServer4 error: ${tokenResponse.status}`,
+          message: response.data?.message || "Login başarısız",
         };
       }
 
-      const tokenData = await tokenResponse.json();
-      console.log("🔍 Token response data:", tokenData);
-
-      const { access_token } = tokenData;
-
-      if (!access_token) {
-        console.error("❌ No access_token in response");
-        return {
-          success: false,
-          message: "Token alınamadı",
-        };
-      }
+      const { token, user: userData } = response.data;
 
       console.log("✅ Token received, updating state...");
 
       // Store token and user data
-      localStorage.setItem("shopping_token", access_token);
-      api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+      localStorage.setItem("shopping_token", token);
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-      setToken(access_token);
-      setUser(accountResponse.data.user);
+      setToken(token);
+      setUser(userData);
 
       console.log("✅ Login successful, state updated");
-      return { success: true, user: accountResponse.data.user };
+      return { success: true, user: userData };
     } catch (error) {
       console.error("Login error:", error);
 
