@@ -182,6 +182,61 @@ public static class SeedData
         }
     }
 
+    private static async Task CreateDemoClientManually(ConfigurationDbContext configurationDbContext)
+    {
+        try
+        {
+            Log.Information("🔧 Creating demo-client manually...");
+
+            // Create demo-client entity manually
+            var demoClient = new IdentityServer4.EntityFramework.Entities.Client
+            {
+                ClientId = "demo-client",
+                ClientName = "Demo Client",
+                Enabled = true,
+                RequireClientSecret = true,
+                RequireConsent = false,
+                AllowOfflineAccess = true,
+                AccessTokenLifetime = 3600,
+                RefreshTokenExpiration = 1, // Sliding
+                SlidingRefreshTokenLifetime = 2592000, // 30 days
+                ClientSecrets = new List<IdentityServer4.EntityFramework.Entities.ClientSecret>
+                {
+                    new IdentityServer4.EntityFramework.Entities.ClientSecret
+                    {
+                        Value = "demo-secret".Sha256(), // Using IdentityServer4 extension
+                        Type = "SharedSecret"
+                    }
+                },
+                AllowedGrantTypes = new List<IdentityServer4.EntityFramework.Entities.ClientGrantType>
+                {
+                    new IdentityServer4.EntityFramework.Entities.ClientGrantType { GrantType = "password" }
+                },
+                AllowedScopes = new List<IdentityServer4.EntityFramework.Entities.ClientScope>
+                {
+                    new IdentityServer4.EntityFramework.Entities.ClientScope { Scope = "openid" },
+                    new IdentityServer4.EntityFramework.Entities.ClientScope { Scope = "profile" },
+                    new IdentityServer4.EntityFramework.Entities.ClientScope { Scope = "email" },
+                    new IdentityServer4.EntityFramework.Entities.ClientScope { Scope = "shopping" }
+                },
+                AllowedCorsOrigins = new List<IdentityServer4.EntityFramework.Entities.ClientCorsOrigin>
+                {
+                    new IdentityServer4.EntityFramework.Entities.ClientCorsOrigin { Origin = "http://localhost:6006" },
+                    new IdentityServer4.EntityFramework.Entities.ClientCorsOrigin { Origin = "http://localhost:3000" }
+                }
+            };
+
+            await configurationDbContext.Clients.AddAsync(demoClient);
+            await configurationDbContext.SaveChangesAsync();
+
+            Log.Information("✅ demo-client created manually");
+        }
+        catch (Exception ex)
+        {
+            Log.Error("❌ Failed to create demo-client manually: {Error}", ex.Message);
+        }
+    }
+
     private static async Task SeedUsers(IServiceProvider serviceProvider)
     {
         var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
