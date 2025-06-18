@@ -7,14 +7,6 @@ const Header = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Debug logging
-  console.log(
-    "🏠 Header render - user:",
-    !!user,
-    "authenticated:",
-    isAuthenticated(),
-  );
-
   const handleLogout = () => {
     logout();
     setShowUserMenu(false);
