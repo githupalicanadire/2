@@ -66,7 +66,6 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
 
       // Step 1: Validate credentials
-      console.log("🔍 Validating credentials...");
       const accountResponse = await api.post(
         "/identity-service/api/account/login",
         {
@@ -83,10 +82,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Step 2: Get token from IdentityServer4 (in-memory config now)
-      console.log("🔍 Getting token from IdentityServer4...");
-
       const tokenUrl = `${api.defaults.baseURL}/identity-service/connect/token`;
-      console.log("🔍 Token URL:", tokenUrl);
 
       const tokenResponse = await fetch(tokenUrl, {
         method: "POST",
