@@ -39,7 +39,15 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  const verifyToken = async () => {
+  const logout = useCallback(() => {
+    localStorage.removeItem("shopping_token");
+    setToken(null);
+    setUser(null);
+    delete api.defaults.headers.common["Authorization"];
+    console.log("👋 User logged out");
+  }, []);
+
+  const verifyToken = useCallback(async () => {
     try {
       setLoading(true);
       console.log("🔍 Verifying token...");
@@ -53,7 +61,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [logout]);
 
   const login = async (username, password) => {
     try {
