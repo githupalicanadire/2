@@ -79,9 +79,12 @@ function App() {
               }
             />
 
-            {/* Debug route - development only */}
+            {/* Debug routes - development only */}
             {process.env.NODE_ENV === "development" && (
-              <Route path="/debug" element={<DebugPage />} />
+              <>
+                <Route path="/debug" element={<DebugPage />} />
+                <Route path="/jwt-debug" element={<JwtDebugPage />} />
+              </>
             )}
           </Routes>
         </main>
