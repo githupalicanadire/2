@@ -150,17 +150,24 @@ export const AuthProvider = ({ children }) => {
 
       // Store token and user data
       localStorage.setItem("shopping_token", access_token);
-      setToken(access_token);
-      setUser(accountResponse.data.user);
 
       // Set authorization header
       api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
 
+      // Update state
+      console.log("🔄 Setting token:", access_token.substring(0, 20) + "...");
+      console.log("🔄 Setting user:", accountResponse.data.user);
+
+      setToken(access_token);
+      setUser(accountResponse.data.user);
+
+      console.log("✅ Login successful with IdentityServer4 token");
       console.log(
-        "✅ Login successful with IdentityServer4 token:",
-        accountResponse.data.user,
+        "✅ Authentication state updated - token:",
+        !!access_token,
+        "user:",
+        !!accountResponse.data.user,
       );
-      console.log("✅ Authentication state updated");
 
       return { success: true, user: accountResponse.data.user };
     } catch (error) {
