@@ -71,56 +71,80 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      // Direct login with JWT response (fuck IdentityServer4 complexity)
-      console.log("🔍 Logging in with direct JWT...");
+      // Step 1: Validate credentials
+      console.log("🔍 Validating credentials...");
+      const accountResponse = await api.post(
+        "/identity-service/api/account/login",
+        {
+          username,
+          password,
+        },
+      );
 
-      const response = await api.post("/identity-service/api/account/login", {
-        username,
-        password,
-      });
-
-      if (!response.data || !response.data.token) {
+      if (!accountResponse.data || !accountResponse.data.needsToken) {
         return {
           success: false,
-          message: response.data?.message || "Login başarısız",
+          message: accountResponse.data?.message || "Login başarısız",
         };
       }
 
-      const { token, user: userData } = response.data;
+      // Step 2: Get token from IdentityServer4 (in-memory config now)
+      console.log("🔍 Getting token from IdentityServer4...");
 
-      // Debug: Check token format
-      console.log("🔍 Received JWT token:", token.substring(0, 50) + "...");
-      const tokenParts = token.split(".");
-      console.log("🔍 Token parts count:", tokenParts.length);
+      const tokenUrl = `${api.defaults.baseURL}/identity-service/connect/token`;
+      console.log("🔍 Token URL:", tokenUrl);
 
-      if (tokenParts.length !== 3) {
-        console.error("❌ Invalid JWT format");
+      const tokenResponse = await fetch(tokenUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          grant_type: "password",
+          client_id: "demo-client",
+          client_secret: "demo-secret",
+          username: username,
+          password: password,
+          scope: "openid profile email shopping",
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text();
+        console.error(
+          "❌ Token request failed:",
+          tokenResponse.status,
+          errorText,
+        );
         return {
           success: false,
-          message: "Geçersiz token formatı",
+          message: `IdentityServer4 error: ${tokenResponse.status}`,
+        };
+      }
+
+      const tokenData = await tokenResponse.json();
+      console.log("🔍 Token response:", tokenData);
+
+      const { access_token } = tokenData;
+
+      if (!access_token) {
+        console.error("❌ No access_token in response");
+        return {
+          success: false,
+          message: "Token alınamadı",
         };
       }
 
       // Store token and user data
-      localStorage.setItem("shopping_token", token);
+      localStorage.setItem("shopping_token", access_token);
+      api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
 
-      // Set authorization header
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      setToken(access_token);
+      setUser(accountResponse.data.user);
 
-      // Update state
-      console.log("🔄 Setting token and user data...");
-      setToken(token);
-      setUser(userData);
+      console.log("✅ Login successful with IdentityServer4 token");
 
-      console.log("✅ Login successful with direct JWT");
-      console.log(
-        "✅ Authentication state updated - token:",
-        !!token,
-        "user:",
-        !!userData,
-      );
-
-      return { success: true, user: userData };
+      return { success: true, user: accountResponse.data.user };
     } catch (error) {
       console.error("❌ Login error:", error);
 
