@@ -40,18 +40,10 @@ builder.Services.AddIdentityServer(options =>
     options.Events.RaiseSuccessEvents = true;
     options.EmitStaticAudienceClaim = true;
 })
-.AddConfigurationStore(options =>
-{
-    options.ConfigureDbContext = b => b.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
-        sql => sql.MigrationsAssembly(migrationsAssembly));
-    options.DefaultSchema = "dbo";
-})
-.AddOperationalStore(options =>
-{
-    options.ConfigureDbContext = b => b.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
-        sql => sql.MigrationsAssembly(migrationsAssembly));
-    options.DefaultSchema = "dbo";
-})
+.AddInMemoryIdentityResources(Config.IdentityResources)
+.AddInMemoryApiScopes(Config.ApiScopes)
+.AddInMemoryApiResources(Config.ApiResources)
+.AddInMemoryClients(Config.Clients)
 .AddAspNetIdentity<ApplicationUser>()
 .AddDeveloperSigningCredential(); // For development only
 
