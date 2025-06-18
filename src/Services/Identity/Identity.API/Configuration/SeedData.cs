@@ -127,12 +127,16 @@ public static class SeedData
             Log.Warning("⚠️ Error seeding API resources: {Error}", ex.Message);
         }
 
-        // Seed Clients
+        // Seed Clients - Force reseed to update CORS settings
         try
         {
-            if (!await configurationDbContext.Clients.AnyAsync())
+            // Check if demo-client exists
+            var demoClientExists = await configurationDbContext.Clients
+                .AnyAsync(c => c.ClientId == "demo-client");
+
+            if (!demoClientExists)
             {
-                Log.Information("👥 Seeding clients...");
+                Log.Information("👥 Seeding clients (demo-client not found)...");
                 try
                 {
                     foreach (var client in Config.Clients)
@@ -140,11 +144,16 @@ public static class SeedData
                         await configurationDbContext.Clients.AddAsync(client.ToEntity());
                     }
                     await configurationDbContext.SaveChangesAsync();
+                    Log.Information("✅ Clients seeded successfully");
                 }
                 catch (Exception mapperEx)
                 {
                     Log.Warning("⚠️ AutoMapper issue with clients: {Error}. Skipping.", mapperEx.Message);
                 }
+            }
+            else
+            {
+                Log.Information("ℹ️ demo-client already exists, skipping client seeding");
             }
         }
         catch (Exception ex)
