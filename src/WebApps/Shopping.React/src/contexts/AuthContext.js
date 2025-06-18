@@ -57,11 +57,15 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("❌ Token verification failed:", error);
       console.log("🧹 Clearing invalid token...");
-      logout(); // Invalid token, logout user
+      // Clear invalid token without calling logout to avoid loops
+      localStorage.removeItem("shopping_token");
+      setToken(null);
+      setUser(null);
+      delete api.defaults.headers.common["Authorization"];
     } finally {
       setLoading(false);
     }
-  }, [logout]);
+  }, []);
 
   const login = async (username, password) => {
     try {
