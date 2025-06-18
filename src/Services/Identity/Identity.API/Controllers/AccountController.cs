@@ -207,24 +207,16 @@ public class AccountController : ControllerBase
     }
 
     [HttpGet("test-jwt")]
-    public async Task<IActionResult> TestJwt()
+    public IActionResult TestJwt()
     {
-        // Generate test JWT with admin user
-        var adminUser = await _userManager.FindByNameAsync("admin");
-        if (adminUser == null)
-        {
-            return Ok(new {
-                error = "Admin user not found",
-                message = "Use POST /api/account/login instead"
-            });
-        }
-
-        var testToken = GenerateJwtToken(adminUser);
-
         return Ok(new {
-            message = "Custom JWT generated successfully",
-            token = testToken,
-            loginEndpoint = "/api/account/login"
+            message = "IdentityServer4 is running with in-memory configuration",
+            tokenEndpoint = "/connect/token",
+            loginFlow = new {
+                step1 = "POST /api/account/login (validate credentials)",
+                step2 = "POST /connect/token (get JWT token)",
+                credentials = "admin / Admin123! or swn / Password123!"
+            }
         });
     }
 
