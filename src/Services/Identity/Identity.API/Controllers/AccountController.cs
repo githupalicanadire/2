@@ -180,7 +180,7 @@ public class AccountController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetProfile()
     {
-        var userId = User.FindFirst("sub")?.Value;
+        var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
         if (string.IsNullOrEmpty(userId))
         {
             return BadRequest(new { message = "User ID not found" });
