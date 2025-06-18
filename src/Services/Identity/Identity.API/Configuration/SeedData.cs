@@ -205,7 +205,7 @@ public static class SeedData
                 {
                     new IdentityServer4.EntityFramework.Entities.ClientSecret
                     {
-                        Value = "demo-secret".Sha256(), // Using IdentityServer4 extension
+                        Value = IdentityServer4.Models.HashExtensions.Sha256("demo-secret"),
                         Type = "SharedSecret"
                     }
                 },
