@@ -148,6 +148,10 @@ public static class Config
                     "basket",
                     "ordering"
                 },
+                AllowedCorsOrigins = {
+                    "http://localhost:6006",
+                    "http://localhost:3000"
+                },
                 RequireConsent = false,
                 AllowOfflineAccess = true,
                 AccessTokenLifetime = 3600,
