@@ -48,8 +48,14 @@ public class AccountController : ControllerBase
             new(JwtRegisteredClaimNames.Name, user.FullName)
         };
 
-        // Add user claims
-        tokenClaims.AddRange(claims);
+        // Add user claims (exclude any that might conflict with standard claims)
+        var additionalClaims = claims.Where(c =>
+            !c.Type.Equals(JwtRegisteredClaimNames.Sub, StringComparison.OrdinalIgnoreCase) &&
+            !c.Type.Equals(JwtRegisteredClaimNames.Email, StringComparison.OrdinalIgnoreCase) &&
+            !c.Type.Equals(JwtRegisteredClaimNames.Name, StringComparison.OrdinalIgnoreCase) &&
+            !c.Type.Equals(JwtRegisteredClaimNames.GivenName, StringComparison.OrdinalIgnoreCase) &&
+            !c.Type.Equals(JwtRegisteredClaimNames.FamilyName, StringComparison.OrdinalIgnoreCase));
+        tokenClaims.AddRange(additionalClaims);
 
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"] ?? "https://localhost:6007",
