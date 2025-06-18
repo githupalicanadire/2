@@ -127,46 +127,53 @@ public static class SeedData
             Log.Warning("⚠️ Error seeding API resources: {Error}", ex.Message);
         }
 
-        // Seed Clients - Force reseed to update CORS settings
+        // Seed Clients - Ensure demo-client exists
         try
         {
-            // Force re-seed for development to update CORS settings
-            var configuration = serviceProvider.GetRequiredService<IConfiguration>();
-            var shouldReseedClients = configuration["ForceReseedClients"] == "true" ||
-                                     Environment.GetEnvironmentVariable("FORCE_RESEED_CLIENTS") == "true";
+            Log.Information("🔍 Checking for demo-client...");
 
-            if (shouldReseedClients)
+            // Check if demo-client specifically exists
+            var demoClientExists = await configurationDbContext.Clients
+                .AnyAsync(c => c.ClientId == "demo-client");
+
+            if (!demoClientExists)
             {
-                Log.Information("🔄 Force reseeding clients due to FORCE_RESEED_CLIENTS=true");
+                Log.Information("👥 demo-client not found, seeding all clients...");
 
-                // Clear existing clients
-                var existingClients = await configurationDbContext.Clients.ToListAsync();
-                configurationDbContext.Clients.RemoveRange(existingClients);
-                await configurationDbContext.SaveChangesAsync();
-            }
+                // Force re-seed for development to update CORS settings
+                var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+                var shouldClearExisting = configuration["ForceReseedClients"] == "true";
 
-            var hasClients = await configurationDbContext.Clients.AnyAsync();
+                if (shouldClearExisting)
+                {
+                    Log.Information("🔄 Clearing existing clients due to ForceReseedClients=true");
+                    var existingClients = await configurationDbContext.Clients.ToListAsync();
+                    configurationDbContext.Clients.RemoveRange(existingClients);
+                    await configurationDbContext.SaveChangesAsync();
+                }
 
-            if (!hasClients)
-            {
-                Log.Information("👥 Seeding clients...");
                 try
                 {
                     foreach (var client in Config.Clients)
                     {
-                        await configurationDbContext.Clients.AddAsync(client.ToEntity());
+                        var clientEntity = client.ToEntity();
+                        await configurationDbContext.Clients.AddAsync(clientEntity);
+                        Log.Information("➕ Added client: {ClientId}", client.ClientId);
                     }
                     await configurationDbContext.SaveChangesAsync();
-                    Log.Information("✅ Clients seeded successfully");
+                    Log.Information("✅ All clients seeded successfully");
                 }
                 catch (Exception mapperEx)
                 {
-                    Log.Warning("⚠️ AutoMapper issue with clients: {Error}. Skipping.", mapperEx.Message);
+                    Log.Error("❌ AutoMapper issue with clients: {Error}. Attempting manual creation...", mapperEx.Message);
+
+                    // Fallback: Create demo-client manually without AutoMapper
+                    await CreateDemoClientManually(configurationDbContext);
                 }
             }
             else
             {
-                Log.Information("ℹ️ Clients already exist, skipping seeding");
+                Log.Information("✅ demo-client already exists");
             }
         }
         catch (Exception ex)
