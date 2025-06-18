@@ -176,13 +176,7 @@ async Task InitializeDatabase(WebApplication app)
             var context = serviceScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             await context.Database.MigrateAsync();
 
-            Log.Information("📊 Migrating PersistedGrantDbContext...");
-            var persistedGrantDbContext = serviceScope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>();
-            await persistedGrantDbContext.Database.EnsureCreatedAsync();
-
-            Log.Information("📊 Migrating ConfigurationDbContext...");
-            var configurationDbContext = serviceScope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
-            await configurationDbContext.Database.EnsureCreatedAsync();
+            Log.Information("ℹ️ Skipping IdentityServer4 database migration - using in-memory configuration");
 
             Log.Information("🌱 Starting data seeding...");
             // Seed data
