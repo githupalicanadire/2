@@ -88,42 +88,29 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Step 2: Get token from IdentityServer4 using Resource Owner Password flow
-      // Use API base URL + connect/token path
-      const tokenUrl = `${api.defaults.baseURL}/identity-service/connect/token`;
-      console.log("🔍 Token endpoint URL:", tokenUrl);
-      console.log("🔍 API base URL:", api.defaults.baseURL);
-      console.log("🔍 Environment:", process.env.NODE_ENV);
+      console.log("🔍 Making token request to IdentityServer4...");
 
-      const tokenResponse = await fetch(tokenUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          grant_type: "password",
-          client_id: "demo-client",
-          client_secret: "demo-secret",
-          username: username,
-          password: password,
-          scope: "openid profile email shopping",
-        }),
+      const tokenRequestData = new URLSearchParams({
+        grant_type: "password",
+        client_id: "demo-client",
+        client_secret: "demo-secret",
+        username: username,
+        password: password,
+        scope: "openid profile email shopping",
       });
 
-      if (!tokenResponse.ok) {
-        const errorData = await tokenResponse.text();
-        console.error(
-          "❌ Token request failed:",
-          tokenResponse.status,
-          errorData,
-        );
-        return {
-          success: false,
-          message: `Token alınamadı: ${tokenResponse.status}`,
-        };
-      }
+      const tokenResponse = await api.post(
+        "/identity-service/connect/token",
+        tokenRequestData,
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        },
+      );
 
-      const tokenData = await tokenResponse.json();
-      console.log("🔍 Token response:", tokenData);
+      console.log("🔍 Token response:", tokenResponse.data);
+      const tokenData = tokenResponse.data;
 
       const { access_token, token_type } = tokenData;
 
