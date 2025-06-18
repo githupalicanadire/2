@@ -130,13 +130,24 @@ public static class SeedData
         // Seed Clients - Force reseed to update CORS settings
         try
         {
-            // Check if demo-client exists
-            var demoClientExists = await configurationDbContext.Clients
-                .AnyAsync(c => c.ClientId == "demo-client");
+            // Force re-seed for development to update CORS settings
+            var shouldReseedClients = Environment.GetEnvironmentVariable("FORCE_RESEED_CLIENTS") == "true";
 
-            if (!demoClientExists)
+            if (shouldReseedClients)
             {
-                Log.Information("👥 Seeding clients (demo-client not found)...");
+                Log.Information("🔄 Force reseeding clients due to FORCE_RESEED_CLIENTS=true");
+
+                // Clear existing clients
+                var existingClients = await configurationDbContext.Clients.ToListAsync();
+                configurationDbContext.Clients.RemoveRange(existingClients);
+                await configurationDbContext.SaveChangesAsync();
+            }
+
+            var hasClients = await configurationDbContext.Clients.AnyAsync();
+
+            if (!hasClients)
+            {
+                Log.Information("👥 Seeding clients...");
                 try
                 {
                     foreach (var client in Config.Clients)
@@ -153,7 +164,7 @@ public static class SeedData
             }
             else
             {
-                Log.Information("ℹ️ demo-client already exists, skipping client seeding");
+                Log.Information("ℹ️ Clients already exist, skipping seeding");
             }
         }
         catch (Exception ex)
