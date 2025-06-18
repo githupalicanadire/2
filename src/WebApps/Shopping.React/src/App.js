@@ -14,6 +14,7 @@ import ConfirmationPage from "./pages/ConfirmationPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DebugPage from "./pages/DebugPage";
+import JwtDebugPage from "./pages/JwtDebugPage";
 
 function App() {
   return (
