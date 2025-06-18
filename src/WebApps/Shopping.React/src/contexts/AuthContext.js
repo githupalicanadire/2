@@ -19,14 +19,18 @@ export const AuthProvider = ({ children }) => {
   // Set token in API headers if exists
   useEffect(() => {
     if (token) {
+      console.log(
+        "🔍 Token found, setting authorization header and verifying...",
+      );
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       // Verify token and get user info
       verifyToken();
     } else {
+      console.log("🔍 No token found, clearing authorization");
       delete api.defaults.headers.common["Authorization"];
+      setUser(null);
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const verifyToken = async () => {
