@@ -192,6 +192,35 @@ public class AccountController : ControllerBase
             }
         });
     }
+
+    [HttpGet("debug/clients")]
+    public async Task<IActionResult> DebugClients()
+    {
+        try
+        {
+            var configDbContext = HttpContext.RequestServices.GetRequiredService<IdentityServer4.EntityFramework.DbContexts.ConfigurationDbContext>();
+
+            var clients = await configDbContext.Clients
+                .Select(c => new { c.Id, c.ClientId, c.ClientName, c.Enabled })
+                .ToListAsync();
+
+            var corsOrigins = await configDbContext.Set<IdentityServer4.EntityFramework.Entities.ClientCorsOrigin>()
+                .Select(co => new { co.ClientId, co.Origin })
+                .ToListAsync();
+
+            return Ok(new {
+                message = "Database client status",
+                clientCount = clients.Count,
+                clients = clients,
+                corsOrigins = corsOrigins,
+                hasDemoClient = clients.Any(c => c.ClientId == "demo-client")
+            });
+        }
+        catch (Exception ex)
+        {
+            return Ok(new { error = ex.Message });
+        }
+    }
 }
 
 public class LoginRequest
