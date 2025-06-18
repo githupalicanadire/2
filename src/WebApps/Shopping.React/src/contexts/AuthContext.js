@@ -22,19 +22,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("shopping_token"));
   const [loading, setLoading] = useState(true);
 
-  // Set token in API headers if exists
-  useEffect(() => {
-    if (token) {
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      // Verify token and get user info
-      verifyToken();
-    } else {
-      delete api.defaults.headers.common["Authorization"];
-      setUser(null);
-      setLoading(false);
-    }
-  }, [token, verifyToken]);
-
+  // Define functions first
   const logout = useCallback(() => {
     localStorage.removeItem("shopping_token");
     setToken(null);
@@ -62,6 +50,19 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   }, []);
+
+  // Set token in API headers if exists
+  useEffect(() => {
+    if (token) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      // Verify token and get user info
+      verifyToken();
+    } else {
+      delete api.defaults.headers.common["Authorization"];
+      setUser(null);
+      setLoading(false);
+    }
+  }, [token, verifyToken]);
 
   const login = async (username, password) => {
     try {
