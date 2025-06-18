@@ -66,6 +66,8 @@ export const AuthProvider = ({ children }) => {
       // Use API base URL + connect/token path
       const tokenUrl = `${api.defaults.baseURL}/identity-service/connect/token`;
       console.log("🔍 Token endpoint URL:", tokenUrl);
+      console.log("🔍 API base URL:", api.defaults.baseURL);
+      console.log("🔍 Environment:", process.env.NODE_ENV);
 
       const tokenResponse = await fetch(tokenUrl, {
         method: "POST",
