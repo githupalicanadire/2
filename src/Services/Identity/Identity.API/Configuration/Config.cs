@@ -22,7 +22,7 @@ public static class Config
             new ApiScope("basket", "Basket Service"),
             new ApiScope("ordering", "Ordering Service"),
             new ApiScope("gateway", "API Gateway"),
-            
+
             // Full access scope
             new ApiScope("shopping", "Shopping Application Full Access")
         };
@@ -60,18 +60,18 @@ public static class Config
                 RequirePkce = true,
                 RequireClientSecret = false,
                 RequireConsent = false,
-                
-                RedirectUris = { 
+
+                RedirectUris = {
                     "http://localhost:6006/callback",
                     "http://localhost:3000/callback" // React dev server
                 },
-                PostLogoutRedirectUris = { 
+                PostLogoutRedirectUris = {
                     "http://localhost:6006/",
-                    "http://localhost:3000/" 
+                    "http://localhost:3000/"
                 },
-                AllowedCorsOrigins = { 
+                AllowedCorsOrigins = {
                     "http://localhost:6006",
-                    "http://localhost:3000" 
+                    "http://localhost:3000"
                 },
 
                 AllowedScopes = {
@@ -112,7 +112,7 @@ public static class Config
                 ClientSecrets = { new Secret("catalog-secret".Sha256()) },
                 AllowedScopes = { "catalog" }
             },
-            
+
             new Client
             {
                 ClientId = "basket-service",
@@ -121,7 +121,7 @@ public static class Config
                 ClientSecrets = { new Secret("basket-secret".Sha256()) },
                 AllowedScopes = { "basket", "catalog" }
             },
-            
+
             new Client
             {
                 ClientId = "ordering-service",
@@ -131,7 +131,7 @@ public static class Config
                 AllowedScopes = { "ordering", "basket" }
             },
 
-            // Demo Client for Testing
+            // Demo Client for Testing (Resource Owner Password)
             new Client
             {
                 ClientId = "demo-client",
@@ -141,9 +141,18 @@ public static class Config
                 AllowedScopes = {
                     IdentityServerConstants.StandardScopes.OpenId,
                     IdentityServerConstants.StandardScopes.Profile,
-                    "shopping"
+                    IdentityServerConstants.StandardScopes.Email,
+                    "roles",
+                    "shopping",
+                    "catalog",
+                    "basket",
+                    "ordering"
                 },
-                RequireConsent = false
+                RequireConsent = false,
+                AllowOfflineAccess = true,
+                AccessTokenLifetime = 3600,
+                RefreshTokenExpiration = TokenExpiration.Sliding,
+                SlidingRefreshTokenLifetime = 3600 * 24 * 30 // 30 days
             }
         };
 }
