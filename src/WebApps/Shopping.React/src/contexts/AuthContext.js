@@ -113,12 +113,9 @@ export const AuthProvider = ({ children }) => {
       }
 
       const tokenData = await tokenResponse.json();
-      console.log("🔍 Token response:", tokenData);
-
       const { access_token } = tokenData;
 
       if (!access_token) {
-        console.error("❌ No access_token in response");
         return {
           success: false,
           message: "Token alınamadı",
@@ -131,8 +128,6 @@ export const AuthProvider = ({ children }) => {
 
       setToken(access_token);
       setUser(accountResponse.data.user);
-
-      console.log("✅ Login successful with IdentityServer4 token");
 
       return { success: true, user: accountResponse.data.user };
     } catch (error) {
