@@ -56,6 +56,10 @@ builder.Services.AddIdentityServer(options =>
 
 // Add JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+
+// Clear default mappings that can cause issues with standard JWT claims
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -73,7 +77,24 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtSettings["SecretKey"] ?? "")),
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        NameClaimType = JwtRegisteredClaimNames.Name,
+        RoleClaimType = "role"
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            Log.Warning("JWT Authentication failed: {Error}", context.Exception.Message);
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            Log.Information("JWT Token validated successfully for user: {User}",
+                context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? "unknown");
+            return Task.CompletedTask;
+        }
     };
 });
 
