@@ -7,6 +7,14 @@ const Header = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
+  // Debug: Check authentication state
+  const authState = isAuthenticated();
+  console.log("🏠 Header: Auth state -", {
+    hasUser: !!user,
+    isAuth: authState,
+    userName: user?.username,
+  });
+
   const handleLogout = () => {
     logout();
     setShowUserMenu(false);
@@ -40,9 +48,14 @@ const Header = () => {
             ) : null}
 
             {process.env.NODE_ENV === "development" && (
-              <Link to="/debug" className="nav-link debug-link">
-                🔧 Debug
-              </Link>
+              <>
+                <Link to="/debug" className="nav-link debug-link">
+                  🔧 Debug
+                </Link>
+                <Link to="/jwt-debug" className="nav-link debug-link">
+                  🔑 JWT Debug
+                </Link>
+              </>
             )}
           </nav>
 

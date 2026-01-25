@@ -1,4 +1,4 @@
-﻿global using Basket.API.Models;
+global using Basket.API.Models;
 global using BuildingBlocks.CQRS;
 global using Carter;
 global using MediatR;
@@ -11,3 +11,4 @@ global using Marten;
 global using Basket.API.Data;
 global using BuildingBlocks.Exceptions.Handler;
 global using Basket.API.Dtos;
+global using Microsoft.Extensions.Caching.Distributed;

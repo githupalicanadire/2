@@ -1,5 +1,23 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import { UserManager, User } from "oidc-client-ts";
 import api from "../services/api";
+
+const config = {
+  authority: "http://localhost:6007",
+  client_id: "shopping-spa",
+  redirect_uri: "http://localhost:6006/callback",
+  response_type: "code",
+  scope: "openid profile shopping_api",
+  post_logout_redirect_uri: "http://localhost:6006",
+};
+
+const userManager = new UserManager(config);
 
 const AuthContext = createContext();
 
@@ -13,140 +31,148 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("shopping_token"));
   const [loading, setLoading] = useState(true);
-
-  // Set token in API headers if exists
-  useEffect(() => {
-    if (token) {
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      // Verify token and get user info
-      verifyToken();
-    } else {
-      delete api.defaults.headers.common["Authorization"];
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
-
-  const verifyToken = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get("/identity-service/api/account/profile");
-      setUser(response.data);
-    } catch (error) {
-      console.error("Token verification failed:", error);
-      logout(); // Invalid token, logout user
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const login = async (username, password) => {
     try {
       setLoading(true);
-      const response = await api.post("/identity-service/api/account/login", {
-        username,
-        password,
+      
+      // Önce Identity Server'dan token al
+      const response = await fetch("http://localhost:6007/connect/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          grant_type: "password",
+          username: username,
+          password: password,
+          client_id: "shopping-spa",
+          scope: "openid profile shopping_api",
+        }),
       });
 
-      if (response.data && response.data.token) {
-        const { token: newToken, user: userData } = response.data;
-
-        // Store token
-        localStorage.setItem("shopping_token", newToken);
-        setToken(newToken);
-        setUser(userData);
-
-        // Set authorization header
-        api.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
-
-        console.log("✅ Login successful:", userData);
-        return { success: true };
-      } else {
-        return {
-          success: false,
-          message: response.data?.message || "Login başarısız",
-        };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error_description || "Giriş başarısız");
       }
-    } catch (error) {
-      console.error("❌ Login error:", error);
-      return {
-        success: false,
-        message:
-          error.response?.data?.message ||
-          error.message ||
-          "Giriş yapılırken hata oluştu",
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const register = async (userData) => {
-    try {
-      setLoading(true);
-      const response = await api.post(
-        "/identity-service/api/account/register",
-        {
-          username: userData.username,
-          email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          password: userData.password,
+      const data = await response.json();
+      console.log("Token response:", data); // Debug için
+      
+      // Token'ı kullanarak kullanıcı bilgilerini al
+      const userResponse = await fetch("http://localhost:6007/connect/userinfo", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${data.access_token}`,
+          "Content-Type": "application/json",
         },
-      );
+      });
 
-      console.log("✅ Registration successful:", response.data);
-      return {
-        success: true,
-        message: "Kayıt başarılı! Şimdi giriş yapabilirsiniz.",
+      if (!userResponse.ok) {
+        console.error("Userinfo response:", await userResponse.text()); // Debug için
+        throw new Error("Kullanıcı bilgileri alınamadı");
+      }
+
+      const userInfo = await userResponse.json();
+      console.log("Userinfo response:", userInfo); // Debug için
+      
+      // Kullanıcı bilgilerini ve token'ı birleştir
+      const user = {
+        ...userInfo,
+        access_token: data.access_token,
+        id_token: data.id_token,
+        token_type: data.token_type,
+        expires_at: Date.now() + data.expires_in * 1000,
       };
+
+      setUser(user);
+      
+      // API çağrıları için token'ı ayarla
+      api.defaults.headers.common["Authorization"] = `Bearer ${data.access_token}`;
+      
+      return { success: true, user };
     } catch (error) {
-      console.error("❌ Registration error:", error);
+      console.error("Login error:", error);
       return {
         success: false,
-        message:
-          error.response?.data?.message ||
-          error.message ||
-          "Kayıt olurken hata oluştu",
+        message: error.message || "Giriş yapılırken hata oluştu",
       };
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("shopping_token");
-    setToken(null);
-    setUser(null);
-    delete api.defaults.headers.common["Authorization"];
-    console.log("👋 User logged out");
+  const logout = useCallback(async () => {
+    try {
+      await userManager.signoutRedirect();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  }, []);
+
+  const handleCallback = async () => {
+    try {
+      const user = await userManager.signinRedirectCallback();
+      setUser(user);
+      
+      // Set token for API calls
+      if (user.access_token) {
+        api.defaults.headers.common["Authorization"] = `Bearer ${user.access_token}`;
+      }
+      
+      return { success: true, user };
+    } catch (error) {
+      console.error("Callback error:", error);
+      return {
+        success: false,
+        message: "Giriş işlemi tamamlanamadı",
+      };
+    }
   };
 
   const isAuthenticated = () => {
-    return !!token && !!user;
+    return !!user;
   };
 
   const getCurrentUser = () => {
-    return user?.username || "guest";
+    return user?.profile?.name || "guest";
   };
 
   const getCurrentCustomerId = () => {
-    return user?.id || null;
+    return user?.profile?.sub || null;
   };
+
+  // Effects
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const user = await userManager.getUser();
+        if (user) {
+          setUser(user);
+          if (user.access_token) {
+            api.defaults.headers.common["Authorization"] = `Bearer ${user.access_token}`;
+          }
+        }
+      } catch (error) {
+        console.error("Error checking user:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUser();
+  }, []);
 
   const value = {
     user,
-    token,
     loading,
     login,
-    register,
     logout,
+    handleCallback,
     isAuthenticated,
     getCurrentUser,
     getCurrentCustomerId,
-    verifyToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

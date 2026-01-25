@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 
 namespace Identity.API.Controllers;
 
@@ -30,37 +31,39 @@ public class AccountController : ControllerBase
         _configuration = configuration;
     }
 
-    private string GenerateJwtToken(ApplicationUser user, IList<Claim> claims)
+    private string GenerateJwtToken(ApplicationUser user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-            jwtSettings["SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast256BitsLong!"));
+            jwtSettings["SecretKey"] ?? "YourSuperSecretKeyThatIsAtLeast256BitsLong!ForToyLandApp2024"));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var tokenClaims = new List<Claim>
+        var claims = new List<Claim>
         {
-            new("jti", Guid.NewGuid().ToString()),
-            new("sub", user.Id),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Sub, user.Id),
+            new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
+            new(JwtRegisteredClaimNames.GivenName, user.FirstName),
+            new(JwtRegisteredClaimNames.FamilyName, user.LastName),
+            new(JwtRegisteredClaimNames.Name, user.FullName),
             new("username", user.UserName ?? ""),
-            new("email", user.Email ?? ""),
-            new("given_name", user.FirstName),
-            new("family_name", user.LastName),
-            new("name", user.FullName)
+            new("role", "customer")
         };
 
-        // Add user claims
-        tokenClaims.AddRange(claims);
-
         var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"] ?? "https://localhost:6007",
+            issuer: jwtSettings["Issuer"] ?? "http://identity.api:8080",
             audience: jwtSettings["Audience"] ?? "shopping-spa",
-            claims: tokenClaims,
+            claims: claims,
             expires: DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["ExpirationMinutes"] ?? "60")),
             signingCredentials: credentials
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+
+
+
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -84,14 +87,12 @@ public class AccountController : ControllerBase
         user.LastLoginAt = DateTime.UtcNow;
         await _userManager.UpdateAsync(user);
 
-        // Get user claims
-        var userClaims = await _userManager.GetClaimsAsync(user);
+        // Generate JWT token directly (simplest solution)
+        var token = GenerateJwtToken(user);
 
-        // Generate JWT token
-        var token = GenerateJwtToken(user, userClaims);
+        _logger.LogInformation("User {Username} logged in successfully with direct JWT", request.Username);
 
-        _logger.LogInformation("User {Username} logged in successfully", request.Username);
-
+        // Return token directly
         return Ok(new
         {
             message = "Login successful",
@@ -144,11 +145,11 @@ public class AccountController : ControllerBase
         // Add default claims
         await _userManager.AddClaimsAsync(user, new[]
         {
-            new Claim("sub", user.Id),
-            new Claim("name", user.FullName),
-            new Claim("given_name", user.FirstName),
-            new Claim("family_name", user.LastName),
-            new Claim("email", user.Email),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.Name, user.FullName),
+            new Claim(JwtRegisteredClaimNames.GivenName, user.FirstName),
+            new Claim(JwtRegisteredClaimNames.FamilyName, user.LastName),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim("role", "customer")
         });
 
@@ -180,9 +181,13 @@ public class AccountController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetProfile()
     {
-        var userId = User.FindFirst("sub")?.Value;
+        _logger.LogInformation("Getting profile for user. Claims: {Claims}",
+            string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
+
+        var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
         if (string.IsNullOrEmpty(userId))
         {
+            _logger.LogWarning("No sub claim found in token");
             return BadRequest(new { message = "User ID not found" });
         }
 
@@ -203,6 +208,49 @@ public class AccountController : ControllerBase
             createdAt = user.CreatedAt,
             lastLoginAt = user.LastLoginAt
         });
+    }
+
+    [HttpGet("test-jwt")]
+    public IActionResult TestJwt()
+    {
+        return Ok(new {
+            message = "IdentityServer (Duende) is running with in-memory configuration",
+            tokenEndpoint = "/connect/token",
+            loginFlow = new {
+                step1 = "POST /api/account/login (validate credentials)",
+                step2 = "POST /connect/token (get JWT token)",
+                credentials = "admin / Admin123! or swn / Password123!"
+            }
+        });
+    }
+
+    [HttpGet("debug/clients")]
+    public async Task<IActionResult> DebugClients()
+    {
+        try
+        {
+            var configDbContext = HttpContext.RequestServices.GetRequiredService<Duende.IdentityServer.EntityFramework.DbContexts.ConfigurationDbContext>();
+
+            var clients = await configDbContext.Clients
+                .Select(c => new { c.Id, c.ClientId, c.ClientName, c.Enabled })
+                .ToListAsync();
+
+            var corsOrigins = await configDbContext.Set<Duende.IdentityServer.EntityFramework.Entities.ClientCorsOrigin>()
+                .Select(co => new { co.ClientId, co.Origin })
+                .ToListAsync();
+
+            return Ok(new {
+                message = "Database client status",
+                clientCount = clients.Count,
+                clients = clients,
+                corsOrigins = corsOrigins,
+                hasDemoClient = clients.Any(c => c.ClientId == "demo-client")
+            });
+        }
+        catch (Exception ex)
+        {
+            return Ok(new { error = ex.Message });
+        }
     }
 }
 

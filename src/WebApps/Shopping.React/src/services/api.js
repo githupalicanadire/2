@@ -24,6 +24,23 @@ api.interceptors.request.use(
     // Add JWT token if available
     const token = localStorage.getItem("shopping_token");
     if (token) {
+      // Debug: Check token format
+      console.log("Token length:", token.length);
+      console.log("Token starts with:", token.substring(0, 50));
+
+      // Check if token has proper JWT format (should have 2 dots)
+      const parts = token.split(".");
+      if (parts.length !== 3) {
+        console.error(
+          "❌ Invalid JWT format. Expected 3 parts, got:",
+          parts.length,
+        );
+        console.error("Token parts:", parts);
+        // Clear invalid token
+        localStorage.removeItem("shopping_token");
+        return config;
+      }
+
       config.headers.Authorization = `Bearer ${token}`;
     }
 

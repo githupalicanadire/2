@@ -28,6 +28,7 @@ const ProductsPage = () => {
   const [pageSize] = useState(12);
   const [totalCount, setTotalCount] = useState(0);
   const [addingToCart, setAddingToCart] = useState({});
+  const [notification, setNotification] = useState(null);
 
   const { getCurrentUser, isAuthenticated } = useAuth();
 
@@ -71,17 +72,24 @@ const ProductsPage = () => {
     }
   };
 
+  const showNotification = (message, type = "success") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
   const addToCart = async (product) => {
     try {
       setAddingToCart((prev) => ({ ...prev, [product.id]: true }));
 
       if (!isAuthenticated()) {
-        alert("🔐 Sepete ürün eklemek için giriş yapmalısınız!");
+        showNotification(
+          "🔐 Sepete ürün eklemek için giriş yapmalısınız!",
+          "warning"
+        );
         return;
       }
 
-      const userName = getCurrentUser();
-
+      const user = getCurrentUser();
       const item = {
         productId: product.id,
         productName: product.name,
@@ -90,13 +98,14 @@ const ProductsPage = () => {
         color: "Default",
       };
 
-      await basketService.addItemToBasket(userName, item);
-
-      // Başarı mesajı göster
-      alert(`🎉 ${product.name} sepetinize eklendi! 🛒`);
+      await basketService.addItemToBasket(user, item);
+      showNotification(`🎉 ${product.name} sepetinize eklendi! 🛒`);
     } catch (error) {
       console.error("Add to cart error:", error);
-      alert(`😔 Ürün sepete eklenirken hata oluştu: ${error.message}`);
+      showNotification(
+        `😔 Ürün sepete eklenirken hata oluştu: ${error.message}`,
+        "error"
+      );
     } finally {
       setAddingToCart((prev) => ({ ...prev, [product.id]: false }));
     }
@@ -121,6 +130,19 @@ const ProductsPage = () => {
 
   return (
     <div className="products-page">
+      {/* Notification */}
+      {notification && (
+        <div className={`notification notification-${notification.type}`}>
+          {notification.message}
+          <button
+            className="notification-close"
+            onClick={() => setNotification(null)}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="page-header">
         <h1>🎁 Oyuncak Dünyamız 🌟</h1>
         <p>🧸 Hayal ettiğiniz her oyuncak burada! 🎮</p>

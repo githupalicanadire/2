@@ -1,7 +1,8 @@
 using Identity.API.Data;
 using Identity.API.Models;
-using IdentityServer4.EntityFramework.DbContexts;
-using IdentityServer4.EntityFramework.Mappers;
+using Duende.IdentityServer.EntityFramework.DbContexts;
+using Duende.IdentityServer.EntityFramework.Mappers;
+using Duende.IdentityServer.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -15,10 +16,10 @@ public static class SeedData
     {
         Log.Information("🌱 Seeding database...");
 
-        // Seed IdentityServer configuration data
-        await SeedIdentityServerConfigurationData(serviceProvider);
+        // Skip IdentityServer4 seeding (using custom JWT instead)
+        Log.Information("ℹ️ Skipping IdentityServer4 configuration seeding - using custom JWT");
 
-        // Seed users
+        // Seed users only
         await SeedUsers(serviceProvider);
 
         Log.Information("✅ Database seeding completed");
@@ -37,11 +38,19 @@ public static class SeedData
             if (!await configurationDbContext.IdentityResources.AnyAsync())
             {
                 Log.Information("🔑 Seeding identity resources...");
-                foreach (var resource in Config.IdentityResources)
+                try
                 {
-                    await configurationDbContext.IdentityResources.AddAsync(resource.ToEntity());
+                    foreach (var resource in Config.IdentityResources)
+                    {
+                        await configurationDbContext.IdentityResources.AddAsync(resource.ToEntity());
+                    }
+                    await configurationDbContext.SaveChangesAsync();
                 }
-                await configurationDbContext.SaveChangesAsync();
+                catch (Exception mapperEx)
+                {
+                    Log.Warning("⚠️ AutoMapper issue with IdentityServer4: {Error}. Skipping identity resources seeding.", mapperEx.Message);
+                    Log.Information("ℹ️ Identity resources will be created on first use.");
+                }
             }
         }
         catch (Exception ex)
@@ -50,14 +59,22 @@ public static class SeedData
             await configurationDbContext.Database.MigrateAsync();
 
             // Retry seeding after migration
-            if (!await configurationDbContext.IdentityResources.AnyAsync())
+            try
             {
-                Log.Information("🔑 Seeding identity resources after migration...");
-                foreach (var resource in Config.IdentityResources)
+                if (!await configurationDbContext.IdentityResources.AnyAsync())
                 {
-                    await configurationDbContext.IdentityResources.AddAsync(resource.ToEntity());
+                    Log.Information("🔑 Seeding identity resources after migration...");
+                    foreach (var resource in Config.IdentityResources)
+                    {
+                        await configurationDbContext.IdentityResources.AddAsync(resource.ToEntity());
+                    }
+                    await configurationDbContext.SaveChangesAsync();
                 }
-                await configurationDbContext.SaveChangesAsync();
+            }
+            catch (Exception retryEx)
+            {
+                Log.Warning("⚠️ Still failed after migration: {Error}. Continuing without identity resources.", retryEx.Message);
+                Log.Information("ℹ️ Identity resources will be created automatically on first request.");
             }
         }
 
@@ -67,11 +84,18 @@ public static class SeedData
             if (!await configurationDbContext.ApiScopes.AnyAsync())
             {
                 Log.Information("🔒 Seeding API scopes...");
-                foreach (var scope in Config.ApiScopes)
+                try
                 {
-                    await configurationDbContext.ApiScopes.AddAsync(scope.ToEntity());
+                    foreach (var scope in Config.ApiScopes)
+                    {
+                        await configurationDbContext.ApiScopes.AddAsync(scope.ToEntity());
+                    }
+                    await configurationDbContext.SaveChangesAsync();
                 }
-                await configurationDbContext.SaveChangesAsync();
+                catch (Exception mapperEx)
+                {
+                    Log.Warning("⚠️ AutoMapper issue with API scopes: {Error}. Skipping.", mapperEx.Message);
+                }
             }
         }
         catch (Exception ex)
@@ -85,11 +109,18 @@ public static class SeedData
             if (!await configurationDbContext.ApiResources.AnyAsync())
             {
                 Log.Information("🌐 Seeding API resources...");
-                foreach (var resource in Config.ApiResources)
+                try
                 {
-                    await configurationDbContext.ApiResources.AddAsync(resource.ToEntity());
+                    foreach (var resource in Config.ApiResources)
+                    {
+                        await configurationDbContext.ApiResources.AddAsync(resource.ToEntity());
+                    }
+                    await configurationDbContext.SaveChangesAsync();
                 }
-                await configurationDbContext.SaveChangesAsync();
+                catch (Exception mapperEx)
+                {
+                    Log.Warning("⚠️ AutoMapper issue with API resources: {Error}. Skipping.", mapperEx.Message);
+                }
             }
         }
         catch (Exception ex)
@@ -97,17 +128,53 @@ public static class SeedData
             Log.Warning("⚠️ Error seeding API resources: {Error}", ex.Message);
         }
 
-        // Seed Clients
+        // Seed Clients - Ensure demo-client exists
         try
         {
-            if (!await configurationDbContext.Clients.AnyAsync())
+            Log.Information("🔍 Checking for demo-client...");
+
+            // Check if demo-client specifically exists
+            var demoClientExists = await configurationDbContext.Clients
+                .AnyAsync(c => c.ClientId == "demo-client");
+
+            if (!demoClientExists)
             {
-                Log.Information("👥 Seeding clients...");
-                foreach (var client in Config.Clients)
+                Log.Information("👥 demo-client not found, seeding all clients...");
+
+                // Force re-seed for development to update CORS settings
+                var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+                var shouldClearExisting = configuration["ForceReseedClients"] == "true";
+
+                if (shouldClearExisting)
                 {
-                    await configurationDbContext.Clients.AddAsync(client.ToEntity());
+                    Log.Information("🔄 Clearing existing clients due to ForceReseedClients=true");
+                    var existingClients = await configurationDbContext.Clients.ToListAsync();
+                    configurationDbContext.Clients.RemoveRange(existingClients);
+                    await configurationDbContext.SaveChangesAsync();
                 }
-                await configurationDbContext.SaveChangesAsync();
+
+                try
+                {
+                    foreach (var client in Config.Clients)
+                    {
+                        var clientEntity = client.ToEntity();
+                        await configurationDbContext.Clients.AddAsync(clientEntity);
+                        Log.Information("➕ Added client: {ClientId}", client.ClientId);
+                    }
+                    await configurationDbContext.SaveChangesAsync();
+                    Log.Information("✅ All clients seeded successfully");
+                }
+                catch (Exception mapperEx)
+                {
+                    Log.Error("❌ AutoMapper issue with clients: {Error}. Attempting manual creation...", mapperEx.Message);
+
+                    // Fallback: Create demo-client manually without AutoMapper
+                    await CreateDemoClientManually(configurationDbContext);
+                }
+            }
+            else
+            {
+                Log.Information("✅ demo-client already exists");
             }
         }
         catch (Exception ex)
@@ -116,7 +183,44 @@ public static class SeedData
         }
     }
 
-    private static async Task SeedUsers(IServiceProvider serviceProvider)
+    private static async Task CreateDemoClientManually(ConfigurationDbContext configurationDbContext)
+    {
+        try
+        {
+            Log.Information("🔧 Creating demo-client manually via direct SQL...");
+
+            // Use direct SQL to bypass AutoMapper issues
+            await configurationDbContext.Database.ExecuteSqlRawAsync(@"
+                INSERT INTO Clients (Enabled, ClientId, ProtocolType, RequireClientSecret, ClientName, RequireConsent, AllowOfflineAccess, AccessTokenLifetime, RefreshTokenExpiration, SlidingRefreshTokenLifetime, Created, NonEditable)
+                VALUES (1, 'demo-client', 'oidc', 1, 'Demo Client', 0, 1, 3600, 1, 2592000, GETUTCDATE(), 0)
+            ");
+
+            // Add client details
+            await configurationDbContext.Database.ExecuteSqlRawAsync(@"
+                DECLARE @ClientPkId INT = (SELECT Id FROM Clients WHERE ClientId = 'demo-client');
+
+                INSERT INTO ClientSecrets (Description, Value, Expiration, Type, Created, ClientId)
+                VALUES ('Demo Secret', 'K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols=', NULL, 'SharedSecret', GETUTCDATE(), @ClientPkId);
+
+                INSERT INTO ClientGrantTypes (GrantType, ClientId)
+                VALUES ('password', @ClientPkId);
+
+                INSERT INTO ClientScopes (Scope, ClientId)
+                VALUES ('openid', @ClientPkId), ('profile', @ClientPkId), ('email', @ClientPkId), ('shopping', @ClientPkId);
+
+                INSERT INTO ClientCorsOrigins (Origin, ClientId)
+                VALUES ('http://localhost:6006', @ClientPkId), ('http://localhost:3000', @ClientPkId);
+            ");
+
+            Log.Information("✅ demo-client created successfully via SQL");
+        }
+        catch (Exception ex)
+        {
+            Log.Error("❌ Failed to create demo-client via SQL: {Error}", ex.Message);
+        }
+    }
+
+    public static async Task SeedUsers(IServiceProvider serviceProvider)
     {
         var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 

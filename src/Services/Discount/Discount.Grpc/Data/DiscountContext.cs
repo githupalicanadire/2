@@ -1,4 +1,4 @@
-﻿using Discount.Grpc.Models;
+using Discount.Grpc.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Discount.Grpc.Data;
@@ -15,8 +15,8 @@ public class DiscountContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Coupon>().HasData(
-            new Coupon { Id = 1, ProductName = "IPhone X", Description = "IPhone Discount", Amount = 150 },
-            new Coupon { Id = 2, ProductName = "Samsung 10", Description = "Samsung Discount", Amount = 100 }
+            new Coupon { Id = 1, ProductName = "1:24 Lamborghini Sian FKP 37 Model Araba (Yeşil)", Description = "Lamborghini Model Araba İndirimi", Amount = 20 },
+            new Coupon { Id = 2, ProductName = "LEGO Technic Ferrari SF-24 F1 Araba", Description = "LEGO Ferrari F1 Araba İndirimi", Amount = 20 }
             );
     }
 }
